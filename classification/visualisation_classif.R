@@ -40,14 +40,18 @@ cor(classif, method = "pearson") # but d'analyser numériquement et plus graphiq
 
 ######### 2. PCA => je n'y arrive pas a cause de lambda
 classif.scaled<-scale(classif)
-# summary(classif.scaled)
-pca<-princomp(classif.scaled)
-# pca
-Z<-pca$scores
-lambda<-pow(pca$sdev,2)
-# plot(cumsum(lambda)/sum(lamdba), type="l", xlab="q", ylab="proportion of explained variance")
 
+# PCA exploration
+pca <- prcomp(classif.scaled, scale = TRUE, center = TRUE, retx = T)
+pca.var <- pca$sdev^2
 
+prop_var <- pca.var / sum(pca.var)
+plot(prop_var,
+    xlab = "principal component",
+    ylab = "Proportion of Variance Explained",
+    ylim = c(0, 1),
+    type = "b",
+)
 
 ##### autre tentative de transformation des données
 # merge.classif <- classif %>% pivot_longer(X1:X45, names_to = "question", values_to = "response")

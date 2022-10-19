@@ -6,7 +6,8 @@ rm(list=ls())
 classif <- read.table(file='./Data/TPN1_a22_clas_app.txt', header = TRUE)
 head(classif) # données quantitatives de X1 à X45, données qualitatives X46 à X50, y est la donnée de classe à prédire (3 classes différentes)
 summary(classif)
-# besoin nettoyer les données ? je ne pense pas 
+
+classif.scaled<-scale(classif) # A FAIRE : comparer mes results ac scaled / non scaled
 
 ###### 0. Separation des données en test et train
 n <- nrow(classif)
@@ -52,6 +53,16 @@ err.naive <- mean(pred.naive != classif.test$y) # meilleurs résultats qu'avec A
 
 # ne pas oublier de vérifier l'hypothèse forte d’indépendance entre les prédicteurs faite ac NB (i.e. 𝑥𝑖 ⟂ 𝑥𝑗)
 # quel test faire ?
+class(classif$X46)
+# classif$X46<-as.factor(classif$X46)
+chisq.test(classif[c(0:45)])
+classif[c(0:45)]
+
+classif.chi2 <- classif
+
+for (i in 1:10) {
+  classif.chi2$i = classif.chi2$i + 20
+}
 
 # Autre manière de calculer l'erreur
 # conf.naive <- table(classif.test$y,pred.naive) 
@@ -154,12 +165,27 @@ print(paste('Accuracy =', 1-misClassError))
 err.knn <- min(err.knn, misClassError)
 
 
+##### 6. Regression logistique
+library(nnet)
+fit<-multinom(y~., data=classif.train)
+pred.classif<-predict(fit, newdata=classif.test)
+perf<-table(classif.test$y, pred.classif)
+err.reglog <- 1-sum(diag(perf))/nb.test
+
+
+
+
+## Validation croisée
+K<-10
+
+
 ### Reste à faire : 
-# il faudrait peut être normaliser nos données dès le départ (ds ts cas )pour l'instant je ne l'ai fait que pour KNN à la fin)
+# il faudrait peut être normaliser nos données dès le départ (ds ts cas) pr l'instant je ne l'ai fait que pour KNN à la fin)
 # faire des tests d'hypothèse pour NB, ADL & ADQ
+# faut il consid données X46 à X50 comme classes aussi ??? j'imagine q oui mais jsp si possible faire preds en les prenant en compte ds ce cas là
 # on pourrait aussi passer à la validation croisée K-fold
 # essayer la regression logistique 
-# selection de modèle: subset selec / regularizat° / feature extract° --> ACP
+# selection de modèle: subset selec / regularizat° / feature extract° 
 
 #### tentative subset selection (attention je ne sais pas si c'est censé fonctionner avec de la classification)
 # install.packages("leaps")
