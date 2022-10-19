@@ -1,14 +1,15 @@
-setwd("/Users/cecileasselin/Desktop/SY19/TD4/")
+#setwd("/Users/cecileasselin/Desktop/SY19/TD4/")
 rm(list=ls())
 
 ############# CLASSIFICATION ####################
 
-classif <- read.table(file='./Data/TPN1_a22_clas_app.txt', header = TRUE)
-head(classif) # donnÃ©es quantitatives de X1 Ã  X45, donnÃ©es qualitatives X46 Ã  X50, y est la donnÃ©e de classe Ã  prÃ©dire (3 classes diffÃ©rentes)
+#classif <- read.table(file='./Data/TPN1_a22_clas_app.txt', header = TRUE)
+classif <- read.table(file='TPN1_a22_clas_app.txt', header = TRUE)
+head(classif) # donn¨¦es quantitatives de X1 ¨¤ X45, donn¨¦es qualitatives X46 ¨¤ X50, y est la donn¨¦e de classe ¨¤ pr¨¦dire (3 classes diff¨¦rentes)
 summary(classif)
-# besoin nettoyer les donnÃ©es ? je ne pense pas 
+# besoin nettoyer les donn¨¦es ? je ne pense pas 
 
-###### 0. Separation des donnÃ©es en test et train
+###### 0. Separation des donn¨¦es en test et train
 n <- nrow(classif)
 p <- ncol(classif)-1
 nb.train <- round(2*n/3) 
@@ -16,9 +17,9 @@ nb.test <- n - nb.train
 
 # We declare the class variable as a factor (because it is a (qualitative) category variable) 
 classif$y<-as.factor(classif$y)
-
+classif$y
 # seed
-set.seed(1729) # the Hardyâ€“Ramanujan number
+set.seed(1729) # the Hardy¨CRamanujan number
 
 # Training/Testing data
 train <- sample(1:n, nb.train) 
@@ -34,10 +35,10 @@ lda.classif <- lda(y~., data=classif.train)
 pred.classif.lda <- predict(lda.classif, newdata=classif.test)
 summary(pred.classif.lda)
 
-# calcul du taux d'erreur de ma prÃ©diction : on est Ã  0.49
+# calcul du taux d'erreur de ma pr¨¦diction : on est ¨¤ 0.491018
 err.lda <- mean(pred.classif.lda$class!=classif.test$y)
-
-# autre maniÃ¨re de calculer erreur empirique  
+err.lda
+# autre mani¨¨re de calculer erreur empirique  
 # matrix.conf.lda <- table(classif.test$y, pred.classif.lda$class) 
 # matrix.conf.lda
 # err.lda <- 1-sum(diag(matrix.conf.lda))/nb.test 
@@ -47,38 +48,44 @@ err.lda <- mean(pred.classif.lda$class!=classif.test$y)
 ####### 2. NB 
 library(naivebayes)
 fit.naive <- naive_bayes(y~.,data=classif.train) 
-pred.naive <- predict(fit.naive,newdata=classif.test)
-err.naive <- mean(pred.naive != classif.test$y) # meilleurs rÃ©sultats qu'avec ADL
+pred.naive <- predict(fit.naive,newdata=classif.test)  ###Warning message:
+########predict.naive_bayes(): more features in the newdata are provided as there are probability tables in the object. Calculation is performed based on features to be found in the tables. 
+err.naive <- mean(pred.naive != classif.test$y) # on est ¨¤ 0.3532934£¬meilleurs r¨¦sultats qu'avec ADL
 
-# ne pas oublier de vÃ©rifier l'hypothÃ¨se forte dâ€™indÃ©pendance entre les prÃ©dicteurs faite ac NB (i.e. ğ‘¥ğ‘– âŸ‚ ğ‘¥ğ‘—)
+# ne pas oublier de v¨¦rifier l'hypoth¨¨se forte d¡¯ind¨¦pendance entre les pr¨¦dicteurs faite ac NB (i.e. ???????? ??? ????????)
 # quel test faire ?
+##  qqPlot()ÒªÇóÓÃlm()ÄâºÏ¡£
 
-# Autre maniÃ¨re de calculer l'erreur
+# Autre mani¨¨re de calculer l'erreur
 # conf.naive <- table(classif.test$y,pred.naive) 
 # conf.naive
 # err.naive <- 1-sum(diag(conf.naive))/nb.test 
 # err.naive
 
 ####### 3. ADQ
-# on n'a peut Ãªtre pas assez de donnÃ©es pour faire une ADQ correcte (si besoin donner plus de donnÃ©es Ã  l'ensemble d'apprentissage, et faire cross-validation)
+# on n'a peut ¨ºtre pas assez de donn¨¦es pour faire une ADQ correcte (si besoin donner plus de donn¨¦es ¨¤ l'ensemble d'apprentissage, et faire cross-validation)
 fit.qda <- qda(y~.,data=classif.train)
 pred.qda <- predict(fit.qda,newdata=classif.test) 
-err.qda <- mean(classif.test$y != pred.qda$class)
+err.qda <- mean(classif.test$y != pred.qda$class) #0.3473054
 
 ###### 4. Comparaison ADL / NB / ADQ ###
 library(pROC)
 roc.lda <- roc(classif.test$y,as.vector(pred.classif.lda$posterior[,1])) 
-plot(roc.lda)
+plot(roc.lda,col="blue")
 
 pred.nb.prob <- predict(fit.naive, newdata=classif.test, type="prob") # COMPRENDRE POURQUOI ON DOIT REFAIRE CETTE PREDICTION AVEC TYPE = PROB
 roc.nb <- roc(classif.test$y, as.vector(pred.nb.prob[,1]))
+#####Warning message:
+######In roc.default(classif.test$y, as.vector(pred.classif.lda$posterior[,  :
+###'response' has more than two levels. Consider setting 'levels' explicitly or using 'multiclass.roc' instead
+                                                                    
 plot(roc.nb, col='red') 
 plot(roc.lda, add=TRUE)
 
-# ProblÃ¨me : je n'arrive x Ã  tracer ma ROC pour l'ADQ
-# roc.qda <- roc(classif.test$y,as.vector(pred.qda$posterior[,1])) 
-# plot(roc.qda, col='blue', add=TRUE)
-
+# Probl¨¨me : je n'arrive x ¨¤ tracer ma ROC pour l'ADQ
+roc.qda <- roc(classif.test$y,as.vector(pred.qda$posterior[,1])) 
+plot(roc.qda, col='blue', add=TRUE)
+legend("bottomright",legend=c("LDA","NB","QDA"),col=c("red","black","blue"),lty=1:2)
 
 ##### 5.KNN
 # Loading package
@@ -153,16 +160,250 @@ misClassError <- mean(classifier_knn != classif.test$y)
 print(paste('Accuracy =', 1-misClassError))
 err.knn <- min(err.knn, misClassError)
 
+for(k in 1:30){
+  classifier_knn <- knn(train = train_scale,
+                        test = test_scale,
+                        cl = classif.train$y,
+                        k = k)
+  misClassError <- mean(classifier_knn != classif.test$y)
+  print(paste(k, '- Accuracy =', 1-misClassError))
+  err.knn <- min(err.knn, misClassError)
+  #plot(k,1-misClassError)
+}
+print(paste('maxAccuracy =', 1-err.knn))
 
-### Reste Ã  faire : 
-# il faudrait peut Ãªtre normaliser nos donnÃ©es dÃ¨s le dÃ©part (ds ts cas )pour l'instant je ne l'ai fait que pour KNN Ã  la fin)
-# faire des tests d'hypothÃ¨se pour NB, ADL & ADQ
-# on pourrait aussi passer Ã  la validation croisÃ©e K-fold
-# essayer la regression logistique 
-# selection de modÃ¨le: subset selec / regularizatÂ° / feature extractÂ° --> ACP
 
-#### tentative subset selection (attention je ne sais pas si c'est censÃ© fonctionner avec de la classification)
+### Reste ¨¤ faire : 
+# il faudrait peut ¨ºtre normaliser nos donn¨¦es d¨¨s le d¨¦part (ds ts cas )pour l'instant je ne l'ai fait que pour KNN ¨¤ la fin)
+# faire des tests d'hypoth¨¨se pour NB, ADL & ADQ
+# on pourrait aussi passer ¨¤ la validation crois¨¦e K-fold
+# essayer la regression logistique
+# selection de mod¨¨le: subset selec / regularizat¡ã / feature extract¡ã --> ACP
+
+#### tentative subset selection (attention je ne sais pas si c'est cens¨¦ fonctionner avec de la classification)
 # install.packages("leaps")
 # library(leaps)   #function to search for the best model
 # reg.fit<-regsubsets(y ~.,data=classif.train) # method='exhaustive' => trop lent, & jsp si je garde nvmax ou x
 # plot(reg.fit,scale="r2")
+
+
+
+
+### multinomial logistic regression
+## https://stats.oarc.ucla.edu/r/dae/multinomial-logistic-regression/
+## https://zhuanlan.zhihu.com/p/266664085
+install.packages("nnet")
+library(nnet)
+
+#Êı¾İ×¼±¸
+#classif.train et classif.test
+#¶àÔª·ÖÀàÄ£ĞÍ¹¹½¨
+##Òò×ÓµÄ¼¶±ğ±»ÖØĞÂÅÅĞò£¬ÒÔ±ãÓÉrefÖ¸¶¨µÄ¼¶±ğÊ×ÏÈÏÔÊ¾£¬ÆäÓà¼¶±ğÏÂÒÆ¡£
+##ref : ÏòÁ¿¡¢ÁĞ±í»òÊı¾İÖ¡¡¢Êı×é¡¢¾ØÕó»ò±í¡£Èç¹ûrefÊÇÒ»¸öÏòÁ¿£¨ÕûÊı»ò×Ö·û£©£¬¼ÙÉèËü°üº¬Òª×÷ÎªµÚÒ»¸öµÄ¼¶±ğµÄÃû³Æ»ò±àºÅ£»·Ç³£¹æ¼¶±ğÊÇ±£Áô¡£Èç¹ûrefÊÇÒ»¸öÁĞ±í£¨µ«²»ÊÇÒ»¸öÊı¾İÖ¡£©£¬Ã¿¸öÁĞ±íÔªËØÖĞµÄÒò×Ó¼¶±ğÊÇ×éºÏµÄ¡£Èç¹ûÁĞ±í±»ÃüÃû£¬ÔòÃû³Æ½«ÓÃ×÷ĞÂµÄÒò×Ó¼¶±ğ£¬·ñÔò½«´Ó¾ÉµÄ¡£Èç¹ûrefÊÇÒ»¸öÊı¾İÖ¡»ò¶şÎ¬Êı×é£¬¾ØÕó»òtable£¬¼ÙÉèµÚÒ»ÁĞ¾ßÓĞÎ¨Ò»µÄx¼¶±ğ£¬µÚ¶şÁĞ·Ö±ğ¾ßÓĞ¸Ã¼¶±ğµÄ·Ö×é¡£
+
+#ÕâÀïµÄrefµ½µ×ÊÇÉ¶
+classif.train$y<-relevel(as.factor(classif.train$y),ref="1") #Ñ¡Ôñ²Î¿¼·ÖÀà£¬±ØĞëÓĞref,ref' must be an existing level
+multi.logistreg<-multinom(y~., data=classif.train)
+## multinom:it does not require the data to be reshaped (as the mlogit package does) and to mirror the example code found in Hilbe¡¯s Logistic Regression Models.
+##¶à·ÖÀàµÄÂß¼­»Ø¹éÀûÓÃµÄÊÇlibrary(nnet)°üÖĞµÄmultinom()º¯Êı¡£¸Ãº¯ÊıÓĞÁ½¸öÌØµã£ºÒ»ÊÇĞèÒªÑ¡Ôñ²Î¿¼·ÖÀà£»¶şÊÇ²»ÄÜ¼ÆËãÏµÊıµÄÏÔÖøĞÔ£¨ĞèÒª×Ô¼º¼ÆËã£©¡£¶àÔªÂß¼­»Ø¹éÖĞ£¬¼ÙÉèÓĞ3¸ö·ÖÀà£¬»áÒÔ²Î¿¼·ÖÀà×÷Îª²Î¿¼£¬¹¹½¨Á½¸ö·ÖÀàÄ£ĞÍ¡£Ä£ĞÍ¼ÆËãµÄÊÇ¸ÃÌõÊı¾İÊôÓÚ3¸ö·ÖÀàµÄ¸ÅÂÊ£¬È¡¸ÅÂÊ×î´óµÄ·ÖÀàÎª×îÖÕ·ÖÀà¡£
+summary(multi.logistreg)
+####ÒÔÉÏ½á¹ûÎÒÃÇ¿ÉÒÔ¿´µ½ËäÈ»ÎÒÃÇµÄSpeciesÓĞÈı¸öÀà±ğ£ºsetosa£¬versicolorºÍvirginica£¬µ«ÊÇÒÔÉÏ½á¹ûÖ»ÏÔÊ¾ÁËºóÁ½¸öÀà±ğµÄÏµÊı£¨Coefficients£©ºÍ±ê×¼Îó£¨Std.Errors£©£¬¶øsetosaÀà±ğµÄÏµÊıºÍ±ê×¼Îó¾ùÃ»ÓĞÔÚ½á¹ûÖĞÕ¹Ê¾¡£
+##ÆäÔ­ÒòÊÇ£¬¶àÏîÂß¼­»Ø¹éµÄÔ­ÀíÊÇ£¬ÔÚ½á¹û±äÁ¿µÄÀà±ğÖĞ£¬»áÑ¡ÔñÒ»¸öÀà±ğ×÷Îª²Î¿¼Àà±ğ£¬ÆäËû¸÷¸öÀà±ğµÄÏµÊı½á¹û¶¼ÊÇÒÔ²Î¿¼Àà±ğ×÷Îª²Î¿¼£¨¼´¶¨ÒåÎª1£©£¬½øÒ»²½¼ÆËã¼°½øĞĞÚ¹ÊÍ¡£ÆäÊµÔÚ¶ş·ÖÀàµÄÂß¼­»Ø¹éÖĞ£¬ÎÒÃÇÒ²Ó¦ÓÃµ½ÁËÕâÒ»µã£¬0/1±äÁ¿ÖĞ£¬ÎÒÃÇÄ¬ÈÏµÄ0ÊÇ²Î¿¼Àà±ğ£¬1ÊÇ¸ĞĞËÈ¤Àà±ğ¡£µ«ÊÇÓÉÓÚ¶ş·ÖÀà½á¹ûÃ»ÓĞµÚÈı¸öÀà±ğ£¬ËùÒÔ²»ĞèÒª¶îÍâÌá³öËùÎ½µÄ²Î¿¼ºÍ·Ç²Î¿¼Àà±ğ¡£µ«ÊÇ¶àÏîÂß¼­»Ø¹é¾ÍÓĞËù²»Í¬£¬ÓĞ¶à¸öÀà±ğÔÚ½á¹û±äÁ¿£¬ĞèÒª¿¼ÂÇ²Î¿¼Àà±ğµÄÑ¡Ôñ¡£
+
+##ÏµÊıÏÔÖøĞÔ¼ìÑé
+z<-summary(multi.logistreg)$coefficients/summary(multi.logistreg)$standard.errors
+pvalue<- (1 - pnorm(abs(z), 0, 1)) * 2
+pvalue
+
+#Ïà¶ÔÎ£ÏÕ¶È£¨Ïà¶ÔÎ£ÏÕ·çÏÕ±È£¬odds£¬ÓëORµÈ¼Û£©relative risk ratio
+exp(coef(multi.logistreg))
+
+#µÃµ½Ä£ĞÍµÄÄâºÏÖµ
+#  use predicted probabilities to help you understand the model. You can calculate predicted probabilities for each of our outcome levels using the fitted function. We can start by generating the predicted probabilities for the observations in our dataset and viewing the first few rows
+head(pp <- fitted(multi.logistreg))
+
+## ²âÊÔ¼¯½á¹ûÔ¤²â
+pred.multi.logistreg<-predict(multi.logistreg, classif.test)
+pred.multi.logistreg
+pred.multi.logistreg.prob<-predict(multi.logistreg, classif.test, "prob")
+pred.multi.logistreg.prob
+
+
+#Ô¤²âÕıÈ·°Ù·Ö±È
+err.logistreg <- mean(pred.multi.logistreg!=classif.test$y)
+err.logistreg
+# ou
+matrix.multi.logistreg<-table(classif.test$y,pred.multi.logistreg)
+matrix.multi.logistreg
+err.logistreg<- 1-sum(diag(matrix.multi.logistreg))/nb.test
+err.logistreg  #on est ¨¤ 0.4850299
+
+##ÒÔÏÂÕâÁ½ÖÖ·½Ê½ÓĞÊ²Ã´Çø±ğ£¿ËÆºõ¶¼¿ÉÒÔÓÃ
+roc.logistreg <- roc(classif.test$y, as.vector(pred.multi.logistreg.prob[,1]))
+roc.logistreg<-roc(classif.test$y,as.vector(pred.multi.logistreg.prob$posterior[,1]))
+plot(roc.logistreg,col='purple',add=TRUE)
+
+#####K-fold cross-validation
+#install.packages(caret)
+library(caret)
+folds<-createFolds(y=classif$y,k=10)
+folds
+library(pROC)
+max=0
+num=0
+auc_value<-as.numeric()
+for(i in 1:10){  #10ÕÛ
+  fold.classif.test <- classif[folds[[i]],]# Ê£ÏÂµÄÊı¾İ×÷ÎªÑµÁ·¼¯
+  fold.classif.train <- classif[-folds[[i]],]#È¡folds[[i]]×÷Îª²âÊÔ¼¯
+  fold.lm <- lm(as.numeric(y)~.,data=fold.classif.train)
+  fold.pred <- predict(fold.lm,type='response',newdata=fold.classif.test)
+  ##AUCÖµÔ½´ó£¬×¼È·ÂÊÔ½¸ß
+  ##µ«AUCÖ»ÄÜÓÃÓÚ¶ş·ÖÀàÄ£ĞÍÆÀ¼Û
+  ## https://zhuanlan.zhihu.com/p/33407505
+  #auc_value<- append(auc_value,as.numeric(auc(as.numeric(fold.classif.test[,51]),fold.pred)))
+  roc.curve<-roc(as.numeric(fold.classif.test$y),fold.pred)
+  plot(roc.curve,add=TRUE)
+  if (i==1 | i==10){
+    plot(roc.curve,add=TRUE) 
+  }
+}
+#idx<-which.max(auc_value)
+#print(auc_value)
+
+
+######ajouter les variables transformees
+#####±äÁ¿Ì«¶àÁË
+
+## ÒªËãmseÂğ??????????????
+
+
+
+###########plot_all +KNN
+plot(roc.nb, col='black') 
+plot(roc.lda, col='red',add=TRUE)
+plot(roc.qda, col='green', add=TRUE)
+plot(roc.logistreg,col='blue',add=TRUE)
+legend("bottomright",legend=c("NB","LDA","QDA","Logistic Regression"),col=c("black","red","green","blue"),lty=1:2)
+
+
+
+
+#######48ĞĞ  2. NB 
+library(naivebayes)
+fit.naive <- naive_bayes(y~.,data=classif.train) 
+nb.lm<-lm(y~.,data=classif.train) 
+nb.lm
+pred.naive <- predict(fit.naive,newdata=classif.test)  ###Warning message:
+########predict.naive_bayes(): more features in the newdata are provided as there are probability tables in the object. Calculation is performed based on features to be found in the tables. 
+err.naive <- mean(pred.naive != classif.test$y) # on est ¨¤ 0.3532934£¬meilleurs r¨¦sultats qu'avec ADL
+## noramlite  tp2page5
+##moyen1 Tracer qqnorm
+##Error in qqnorm.default(resid(fit.naive)) : y is empty or has only NAs
+qqnorm(resid(fit.naive))
+qqline(resid(fit.naive))
+resid(fit.naive) ###²Ğ²îÎª0£¿£¿£¿£¿£¿£¿£¿£¿£¿£¿£¿£¿£¿£¿£¿ÎªÊ²Ã´²Ğ²îÎª0
+##moyen2 Tracer histogramme
+hist(resid(fit.naive), freq = FALSE)
+eps <- seq(-2, 2, 0.01)
+lines(eps, dnorm(eps, mean=0, sd=sd(resid(fit.naive))))
+
+shapiro.test(resid(fit.naive))   #Error in shapiro.test(fit.naive) : ²»ÊÇËùÓĞµÄis.numeric(x)¶¼ÊÇTRUE
+for(i in 1:nrow(classif)){
+  classif[i,]<-as.numeric(classif[i,])
+}
+resid(classif) #null
+resid(fit.naive) #null
+shapiro.test(classif[,1])      ##### ÅĞ¶ÏÃ¿Ò»ÁĞ·ûºÏÕıÌ¬·Ö²¼£¿£¿£¿£¿£¿
+
+
+
+####ÏÂÃæµÄÃ»ÓÃÉÏ
+
+library(plyr)
+library(reshape2)
+
+#1¡¢¸ù¾İÑµÁ·¼¯´´½¨ÆÓËØ±´Ò¶Ë¹·ÖÀàÆ÷
+
+#1.1¡¢Éú³ÉÀà±ğµÄ¸ÅÂÊ
+##¼ÆËãÑµÁ·¼¯ºÏDÖĞÀà±ğ³öÏÖµÄ¸ÅÂÊ£¬¼´P{c_i}
+##ÊäÈë£ºtrainData ÑµÁ·¼¯£¬ÀàĞÍÎªÊı¾İ¿ò
+##      strClassName Ö¸Ã÷ÑµÁ·¼¯ÖĞÃû³ÆÎª    strClassNameÁĞÎª·ÖÀà½á¹û
+##Êä³ö£ºÊı¾İ¿ò£¬P{c_i}µÄ¼¯ºÏ£¬Àà±ğÃû³Æ|¸ÅÂÊ£¨ÁĞÃûÎª prob£©
+class_prob <- function(trainData, strClassName){
+  #ÑµÁ·¼¯Ñù±¾Êı
+  #nrow·µ»ØĞĞÊı
+  length_train <- nrow(trainData)
+  dTemp <- ddply(trainData, strClassName, "nrow")
+  dTemp <- transform(dTemp, length_train=length_train) 
+  dTemp <- ddply(dTemp, strClassName, mutate, prob=nrow/length_train)
+  dTemp[,-c(2,3)]
+}
+
+##1.2¡¢Éú³ÉÃ¿¸öÀà±ğÏÂ£¬ÌØÕ÷È¡²»Í¬ÖµµÄ¸ÅÂÊ
+##¼ÆËãÑµÁ·¼¯ºÏDÖĞ,Éú³ÉÃ¿¸öÀà±ğÏÂ£¬ÌØÕ÷È¡²»Í¬ÖµµÄ¸ÅÂÊ£¬¼´P{fi|c_i}
+##ÊäÈë£ºtrainData ÑµÁ·¼¯£¬ÀàĞÍÎªÊı¾İ¿ò
+##      strClassName Ö¸Ã÷ÑµÁ·¼¯ÖĞÃû³ÆÎªstrClassNameÁĞÎª·ÖÀà½á¹û£¬ÆäÓàµÄÈ«²¿ÁĞÈÏÎªÊÇÌØÕ÷Öµ
+##Êä³ö£ºÊı¾İ¿ò£¬P{fi|c_i}µÄ¼¯ºÏ£¬Àà±ğÃû³Æ|ÌØÕ÷Ãû³Æ|ÌØÕ÷È¡Öµ|¸ÅÂÊ£¨ÁĞÃûÎª prob£©
+feature_class_prob <- function(trainData, strClassName){
+  # ºá±í×ª»»Îª×İ±í
+  data.melt <- melt(trainData,id=c(strClassName))
+  # Í³¼ÆÆµÊı
+  aa <- ddply(data.melt, c(strClassName,"variable","value"), "nrow")
+  # ¼ÆËã¸ÅÂÊ
+  bb <- ddply(aa, c(strClassName,"variable"), mutate, sum = sum(nrow), prob = nrow/sum)
+  # Ôö¼ÓÁĞÃû
+  colnames(bb) <- c("class.name",
+                    "feature.name",
+                    "feature.value",
+                    "feature.nrow",
+                    "feature.sum",
+                    "prob")
+  # ·µ»Ø½á¹û
+  bb[,c(1,2,3,6)]
+}
+## ÒÔÉÏ´´½¨ÍêÆÓËØ±´Ò¶Ë¹·ÖÀàÆ÷
+
+
+## 2¡¢Ê¹ÓÃÉú³ÉµÄÆÓËØ±´Ò¶Ë¹·ÖÀàÆ÷½øĞĞÔ¤²â
+##Ê¹ÓÃÉú³ÉµÄÆÓËØ±´Ò¶Ë¹·ÖÀàÆ÷½øĞĞÔ¤²âP{fi|c_i}
+##ÊäÈë£ºoneObs Êı¾İ¿ò£¬´ıÔ¤²âµÄÑù±¾£¬¸ñÊ½Îª ÌØÕ÷Ãû³Æ|ÌØÕ÷Öµ
+##      pc Êı¾İ¿ò£¬ÑµÁ·¼¯ºÏDÖĞÀà±ğ³öÏÖµÄ¸ÅÂÊ£¬¼´P{c_i}  Àà±ğÃû³Æ|¸ÅÂÊ
+##      pfc Êı¾İ¿ò£¬Ã¿¸öÀà±ğÏÂ£¬ÌØÕ÷È¡²»Í¬ÖµµÄ¸ÅÂÊ£¬¼´P{fi|c_i}
+##                  Àà±ğÃû³Æ|ÌØÕ÷Ãû³Æ|ÌØÕ÷Öµ|¸ÅÂÊ
+##Êä³ö£ºÊı¾İ¿ò£¬´ıÔ¤²âÑù±¾µÄ·ÖÀà¶ÔÃ¿¸öÀà±ğµÄ¸ÅÂÊ£¬Àà±ğÃû³Æ|ºóÑé¸ÅÂÊ£¨ÁĞÃûÎª prob£©
+pre_class <- function(oneObs, pc,pfc){
+  colnames(oneObs) <- c("feature.name", "feature.value")
+  colnames(pc) <- c("class.name","prob")
+  colnames(pfc) <- c("class.name","feature.name","feature.value","prob")
+  
+  # È¡³öÌØÕ÷µÄÈ¡ÖµµÄÌõ¼ş¸ÅÂÊ
+  feature.all <- join(oneObs,pfc,by=c("feature.name","feature.value"),type="inner")
+  # È¡³öÌØÕ÷È¡ÖµµÄÌõ¼ş¸ÅÂÊÁ¬³Ë
+  feature.prob <- ddply(feature.all,.(class.name),summarize,prob_fea=prod(prob))  #prodÎªÁ¬³Ëº¯Êı
+  
+  #È¡³öÀà±ğµÄ¸ÅÂÊ
+  class.all <- join(feature.prob,pc,by="class.name",type="inner")
+  #Êä³ö½á¹û
+  ddply(class.all,.(class.name),mutate,pre_prob=prob_fea*prob)[,c(1,4)]
+}
+
+
+##3¡¢Êı¾İ²âÊÔ1
+##ÓÃÉÏÃæÆ»¹ûµÄÊı¾İ×÷ÎªÀı×Ó½øĞĞ²âÊÔ
+#ÑµÁ·¼¯
+train.apple <- data.frame(
+  size=c("´ó","Ğ¡","´ó","´ó","Ğ¡","Ğ¡"),
+  weight=c("Çá","ÖØ","Çá","Çá","ÖØ","Çá"),
+  color=c("ºì","ºì","ºì","ÂÌ","ºì","ÂÌ"),
+  taste=c("good","good","bad","bad","bad","good")
+)
+#´ıÔ¤²âÑù±¾
+oneObs <- data.frame(
+  feature.name =c("size", "weight", "color"),
+  feature.value =c("´ó","ÖØ","ºì")
+)
+
+#Ô¤²â·ÖÀà
+pc <- class_prob(train.apple, "taste")
+pfc <- feature_class_prob(train.apple, "taste")
+pre_class(oneObs, pc, pfc)
