@@ -11,12 +11,17 @@ classif.scaled<-scale(classif) # A FAIRE : comparer mes results ac scaled / non 
 
 ###### 0. Separation des données en test et train
 n <- nrow(classif)
-p <- ncol(classif)-1
+# p <- ncol(classif)-1
 nb.train <- round(2*n/3) 
 nb.test <- n - nb.train
 
 # We declare the class variable as a factor (because it is a (qualitative) category variable) 
 classif$y<-as.factor(classif$y)
+classif$X46<-as.factor(classif$X46)
+classif$X47<-as.factor(classif$X47)
+classif$X48<-as.factor(classif$X48)
+classif$X49<-as.factor(classif$X49)
+classif$X50<-as.factor(classif$X50)
 
 # seed
 set.seed(1729) # the Hardy–Ramanujan number
@@ -53,16 +58,16 @@ err.naive <- mean(pred.naive != classif.test$y) # meilleurs résultats qu'avec A
 
 # ne pas oublier de vérifier l'hypothèse forte d’indépendance entre les prédicteurs faite ac NB (i.e. 𝑥𝑖 ⟂ 𝑥𝑗)
 # quel test faire ?
-class(classif$X46)
+# class(classif$X46)
 # classif$X46<-as.factor(classif$X46)
-chisq.test(classif[c(0:45)])
-classif[c(0:45)]
+# chisq.test(classif[c(0:45)])
+# classif[c(0:45)]
 
-classif.chi2 <- classif
+# classif.chi2 <- classif
 
-for (i in 1:10) {
-  classif.chi2$i = classif.chi2$i + 20
-}
+# for (i in 1:10) {
+#   classif.chi2$i = classif.chi2$i + 20
+# }
 
 # Autre manière de calculer l'erreur
 # conf.naive <- table(classif.test$y,pred.naive) 
@@ -81,14 +86,14 @@ library(pROC)
 roc.lda <- roc(classif.test$y,as.vector(pred.classif.lda$posterior[,1])) 
 plot(roc.lda)
 
-pred.nb.prob <- predict(fit.naive, newdata=classif.test, type="prob") # COMPRENDRE POURQUOI ON DOIT REFAIRE CETTE PREDICTION AVEC TYPE = PROB
-roc.nb <- roc(classif.test$y, as.vector(pred.nb.prob[,1]))
-plot(roc.nb, col='red') 
-plot(roc.lda, add=TRUE)
+# pred.nb.prob <- predict(fit.naive, newdata=classif.test, type="prob") 
+# roc.nb <- roc(classif.test$y, as.vector(pred.nb.prob[,1]))
+# plot(roc.nb, col='red') 
+# plot(roc.lda, add=TRUE)
 
 # Problème : je n'arrive x à tracer ma ROC pour l'ADQ
-# roc.qda <- roc(classif.test$y,as.vector(pred.qda$posterior[,1])) 
-# plot(roc.qda, col='blue', add=TRUE)
+roc.qda <- roc(classif.test$y,as.vector(pred.qda$posterior[,1])) 
+plot(roc.qda, col='blue', add=TRUE)
 
 
 ##### 5.KNN
@@ -192,3 +197,4 @@ K<-10
 # library(leaps)   #function to search for the best model
 # reg.fit<-regsubsets(y ~.,data=classif.train) # method='exhaustive' => trop lent, & jsp si je garde nvmax ou x
 # plot(reg.fit,scale="r2")
+

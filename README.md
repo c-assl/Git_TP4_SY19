@@ -13,6 +13,7 @@
 3. Analyse Discriminante Quadratique (QDA)
 4. Comparaison LDA / NB / QDA a l’aide des courbes COR
 5. KNN
+6. Regression logistique
 
 #### Les résultats que j’ai pour l’instant : 
 QDA et NB semblent avoir les meilleures performances : erreur autour de 0.35

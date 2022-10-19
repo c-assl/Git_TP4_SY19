@@ -1,27 +1,59 @@
 ---
-title: "R Notebook"
+title: "Rapport TP4 SY19 GR D2P1G"
 output:
   pdf_document: default
   html_notebook: default
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+Voici notre rapport pour le TP4 de SY19.
 
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+Nous avons organisé notre travail comme ceci
+
+I. Classification
+
+1.  Experimentation avec différents modèles
+
+2.  ADL
+
+3.  ADQ
+
+4.  NB
+
+5.  ...
+
+6.  Model selection
+
+7.  PCA
+
+8.  RDA
+
+9.  K-Fold
+
+10. Comparaison des différentes méthodes
+
+11. Choix d'un modèle
 
 ```{r}
-##### Ceci est une cellule de test, pour l'instant je n'ai pas du tout commencé le rapport
-classif <- read.table(file='./Data/TPN1_a22_clas_app.txt', header = TRUE)
+# code KNN
+library(nnet)
+fit<-multinom(y~., data=classif.train)
+pred.classif<-predict(fit, newdata=classif.test)
+perf<-table(classif.test$y, pred.classif)
+err.reglog <- 1-sum(diag(perf))/nb.test
 ```
 
+Test d'insertion d'image ![Ceci est un test](/Users/cecileasselin/Desktop/SY19/TD4/test_plot.png)
 
 ```{r}
-head(classif)
+head()
+```
+
+```{r setup}
+library(r2d3)
 ```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).
 
 The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
-

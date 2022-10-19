@@ -38,6 +38,22 @@ cor(classif, method = "pearson") # but d'analyser numériquement et plus graphiq
 # je ne sais pas trop interpréter mais j'ai l'impression qu'on n'a pas de trop gros coefficients de corrélation (au max 0.12)
 
 
+
+
+# Correlation
+panel.cor <- function(x, y){
+  usr <- par("usr"); on.exit(par(usr)) 
+  par(usr = c(0, 1, 0, 1))
+  r <- round(cor(x, y), digits=2)
+  txt <- paste0("R = ", r)
+  text(0.5, 0.5, txt)
+}
+# Create the plots
+pairs(classif[,c(1,2,3,4,5,6,7)], lower.panel = panel.cor)
+pairs(classif[,c(10,11,12,13,14,15,16)], lower.panel = panel.cor)
+pairs(classif[,c(46,47,48,49,50,51,45)], lower.panel = panel.cor)
+
+
 ######### 2. PCA => je n'y arrive pas a cause de lambda
 classif.scaled<-scale(classif)
 
