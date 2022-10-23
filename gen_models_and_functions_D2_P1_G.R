@@ -30,7 +30,7 @@ MSE <- function(y_test, y_predict) {
 }
 
 train.control <- trainControl(method = "cv", number = 5)
-model.reg <- train(y ~ .,
+fwd.reg <- train(y ~ .,
     data = reg.train,
     method = "leapForward",
     tuneGrid = data.frame(nvmax = 1:100),
@@ -38,11 +38,11 @@ model.reg <- train(y ~ .,
 )
 
 # Best set of predictors
-fwd.coefs <- coef(model.reg$finalModel, model.reg$bestTune$nvmax)
-fwd.pred.names <- names(fwd.coefs)[1:model.reg$bestTune$nvmax + 1]
+fwd.coefs <- coef(fwd.reg$finalModel, fwd.reg$bestTune$nvmax)
+fwd.pred.names <- names(fwd.coefs)[1:fwd.reg$bestTune$nvmax + 1]
 
 # Fit linear regression, with the above predictors
-fwd.model.linreg <- lm(paste("y", "~", paste(fwd.pred.names, collapse = " + ")),
+model.reg <- lm(paste("y", "~", paste(fwd.pred.names, collapse = " + ")),
     data = reg.train
 )
 
@@ -83,7 +83,7 @@ prediction_reg <- function(dataset) {
 	library(tidyverse)
 	library(leaps)
 	library(MASS)
-    pred.fwd <- predict(fwd.model.linreg, newdata = dataset)
+    pred.fwd <- predict(model.reg, newdata = dataset)
     pred.fwd
 }
 pred.fwd <- prediction_reg(reg.test)
