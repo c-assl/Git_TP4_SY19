@@ -130,7 +130,7 @@ yhat2<-predict(RF,newdata=classif.test,type="response")
 err.RF<-mean(yhat2 != classif.test$y)
 varImpPlot(RF)
 
-###### 7. Comparaison LDA / QDA / RDA / NB / TREE / LOGISTIC
+###### 8. Comparaison LDA / QDA / RDA / NB / TREE / LOGISTIC
 sprintf("Taux d'erreur de LDA : %f",err.lda)
 sprintf("Taux d'erreur de QDA : %f",err.qda)
 sprintf("Taux d'erreur de RDA : %f",err.rda)
@@ -155,7 +155,6 @@ multiroc.rda <- multiclass.roc(classif.test$y,as.vector(pred.rda$posterior[,1]))
 multiroc.tree <- multiclass.roc(classif.test$y, as.vector(pred.tree.prob[,1])) 
 multiroc.logistreg <- multiclass.roc(classif.test$y, as.vector(pred.multi.logistreg.prob[,1])) # OU roc.logistreg<-roc(classif.test$y,as.vector(pred.multi.logistreg.prob$posterior[,1])) 
 multiroc.nb <- multiclass.roc(classif.test$y, as.vector(pred.nb.prob[,1]))
-
 
 auc(multiroc.lda)
 auc(multiroc.qda)
@@ -212,54 +211,71 @@ plot.cv.error<-function(data,x.title){
   #plot(data,type="b",ylim=range(means.err+1.6*std.errs,means.errs-1.6*std.errs),xlab=x.title,ylab="CV.error")
 }
 
-for(k in 1:K){
-  fold.test<-classif[folds==k,]
-  fold.train<-classif[folds!=k,]
-  fold.classif<-lda(y~.,data=fold.train)
-  fold.predict<-predict(fold.classif,newdata=fold.test)
-  cv.err[k,1]<-mean(fold.predict$class!=fold.test$y)
+for(i in (1:10)){
+  for(k in 1:K){
+    fold.test<-classif[folds==k,]
+    fold.train<-classif[folds!=k,]
+    fold.classif<-lda(y~.,data=fold.train)
+    fold.predict<-predict(fold.classif,newdata=fold.test)
+    cv.err[i]<-cv.err[i]+mean(fold.predict$class!=fold.test$y)
+  } 
+  cv.err[i]<-cv.err[i]/n
 }
 plot.cv.error(cv.err,x.title = "LDA - 10 crossvalidation")
 
-for(k in 1:K){
-  fold.test<-classif[folds==k,]
-  fold.train<-classif[folds!=k,]
-  fold.classif<-qda(y~.,data=fold.train)
-  fold.predict<-predict(fold.classif,newdata=fold.test)
-  cv.err[k,1]<-mean(fold.predict$class!=fold.test$y)
+for(i in (1:10)){
+  for(k in 1:K){
+    fold.test<-classif[folds==k,]
+    fold.train<-classif[folds!=k,]
+    fold.classif<-qda(y~.,data=fold.train)
+    fold.predict<-predict(fold.classif,newdata=fold.test)
+    cv.err[i]<-cv.err[i]+mean(fold.predict$class!=fold.test$y)
+  } 
+  cv.err[i]<-cv.err[i]/n
 }
 plot.cv.error(cv.err,x.title = "QDA - 10 crossvalidation")
 
-for(k in 1:K){
-  fold.test<-classif[folds==k,]
-  fold.train<-classif[folds!=k,]
-  fold.classif<-rda(y~.,data=fold.train)
-  fold.predict<-predict(fold.classif,newdata=fold.test)
-  cv.err[k,1]<-mean(fold.predict$class!=fold.test$y)
+for(i in (1:10)){
+  for(k in 1:K){
+    fold.test<-classif[folds==k,]
+    fold.train<-classif[folds!=k,]
+    fold.classif<-rda(y~.,data=fold.train)
+    fold.predict<-predict(fold.classif,newdata=fold.test)
+    cv.err[i]<-cv.err[i]+mean(fold.predict$class!=fold.test$y)
+  } 
+  cv.err[i]<-cv.err[i]/n
 }
 plot.cv.error(cv.err,x.title = "RDA - 10 crossvalidation")
 
-# for(k in 1:K){
-#   fold.test<-classif[folds==k,]
+
+#for(i in (1:10)){
+#  for(k in 1:K){
+#    fold.test<-classif[folds==k,]
 #   fold.train<-classif[folds!=k,]
 #   fold.classif<-multinom(y~.,data=fold.train)
 #   fold.predict<-predict(fold.classif,newdata=fold.test)
-#   cv.err[k,1]<-mean(fold.predict$class!=fold.test$y)
-# }
+#    cv.err[i]<-cv.err[i]+mean(fold.predict$class!=fold.test$y)
+#  } 
+#  cv.err[i]<-cv.err[i]/n
+#}
 # plot.cv.error(cv.err,x.title = "LOGISTIC REGRESSION - 10 crossvalidation")
 
-# for(k in 1:K){
-#   fold.test<-classif[folds==k,]
-#   fold.train<-classif[folds!=k,]
-#   fold.classif<-naive_bayes(y~.,data=fold.train)
-#   fold.predict<-predict(fold.classif,newdata=fold.test)
-#   cv.err[k,1]<-mean(fold.predict$class!=fold.test$y)
-# }
+
+#for(i in (1:10)){
+#  for(k in 1:K){
+#    fold.test<-classif[folds==k,]
+#    fold.train<-classif[folds!=k,]
+#    fold.classif<-naive_bayes(y~.,data=fold.train)
+#    fold.predict<-predict(fold.classif,newdata=fold.test)
+#    cv.err[i]<-cv.err[i]+mean(fold.predict$class!=fold.test$y)
+#  } 
+#  cv.err[i]<-cv.err[i]/n
+#}
 # plot.cv.error(cv.err,x.title = "Naive Bayes - 10 crossvalidation")
 
 
 
-##### 8.KNN
+##### 9.KNN
 # Loading package
 library(e1071)
 library(caTools)
