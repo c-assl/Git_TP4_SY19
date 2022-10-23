@@ -42,9 +42,7 @@ fwd.coefs <- coef(fwd.reg$finalModel, fwd.reg$bestTune$nvmax)
 fwd.pred.names <- names(fwd.coefs)[1:fwd.reg$bestTune$nvmax + 1]
 
 # Fit linear regression, with the above predictors
-model.reg <- lm(paste("y", "~", paste(fwd.pred.names, collapse = " + ")),
-    data = reg.train
-)
+model.reg <- lm(paste("y", "~", paste(fwd.pred.names, collapse = " + ")), data = reg.train)
 
 
 ######### 1.B. CLASSIFICATION : Apprentissage d'un modèle de Regularized Discriminant Analysis
@@ -89,6 +87,8 @@ prediction_reg <- function(dataset) {
 pred.fwd <- prediction_reg(reg.test)
 MSE(reg.test$y, pred.fwd)
 
+prediction_reg(reg.test)
+
 
 # 2.B. CLASSIFICATION
 prediction_cls <- function(dataset) {
@@ -109,8 +109,8 @@ mean(classif.test$y != pred.rda)
 # Sauvegarder également les objets utilisés dans ces fonctions (`model.reg` et `model.cls` dans l'exemple) !
 
 save(
-    "model.reg",
-    "model.cls",
+    # "model.reg",
+    # "model.cls",
     "prediction_reg",
     "prediction_cls",
     file = "env.Rdata"
