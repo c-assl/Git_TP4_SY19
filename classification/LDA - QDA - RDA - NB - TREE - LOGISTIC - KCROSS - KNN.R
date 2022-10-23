@@ -108,7 +108,7 @@ z<-summary(multi.logistreg)$coefficients/summary(multi.logistreg)$standard.error
 pvalue<- (1 - pnorm(abs(z), 0, 1)) * 2
 pvalue
 
-#????Σ?նȣ?????Σ?շ??ձȣ?odds????OR?ȼۣ?relative risk ratio
+#relative risk ratio
 exp(coef(multi.logistreg))
 
 head(pp <- fitted(multi.logistreg))
@@ -123,6 +123,13 @@ err.logistreg <- mean(pred.multi.logistreg!=classif.test$y)
 err.logistreg #on est ?? 0.4850299
 
 
+### 7. random forest
+library(randomForest)
+RF<-randomForest(as.factor(y)~.,data=classif,subset=train,mtry=3,importance=TRUE)
+yhat2<-predict(RF,newdata=classif.test,type="response")
+err.RF<-mean(yhat2 != classif.test$y)
+varImpPlot(RF)
+
 ###### 7. Comparaison LDA / QDA / RDA / NB / TREE / LOGISTIC
 sprintf("Taux d'erreur de LDA : %f",err.lda)
 sprintf("Taux d'erreur de QDA : %f",err.qda)
@@ -130,6 +137,7 @@ sprintf("Taux d'erreur de RDA : %f",err.rda)
 sprintf("Taux d'erreur de Naive Bayes : %f",err.naive)
 sprintf("Taux d'erreur de classification/decision trees : %f",err.tree)
 sprintf("Taux d'erreur de multinomial logistic regression : %f",err.logistreg)
+sprintf("Taux d'erreur de random forest : %f",err.RF)
 
 pred.tree.prob<-predict(tree, classif.test, "prob")
 pred.multi.logistreg.prob<-predict(multi.logistreg, classif.test, "prob")
