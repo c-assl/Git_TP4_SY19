@@ -194,7 +194,7 @@ n<-nrow(classif)
 #folds<-createFolds(y=classif$y,k=10)
 folds<-sample(1:K,n,replace=TRUE)
 
-cv.err<-matrix(0,ncol=1,nrow=K)
+cv.err<-rep(0,10)
 
 plot.new()
 par(mfrow=c(1,3)) 
