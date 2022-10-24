@@ -14,16 +14,15 @@ output:
 
 I. Regression
 
-1.  Exploration et préparation des données
-2.  Choix d'un modèle de regression et optimisation de ce modèle
-3.  Analyse des résultats
+  1.  Exploration et préparation des données
+  2.  Choix d'un modèle de regression et optimisation de ce modèle
+  3.  Analyse des résultats
 
 II\. Classification
 
-1.  Exploration et préparation des données
-2.  Choix d'un modèle de classification et optimisation de ce modèle
-3.  Analyse des résultats
-
+  1.  Exploration et préparation des données
+  2.  Choix d'un modèle de classification et optimisation de ce modèle
+  3.  Analyse des résultats  
 ```{r message=TRUE, warning=FALSE, include=FALSE}
 library(gridExtra)
 library(ggplot2)
@@ -47,29 +46,24 @@ reg.data <- read.table('../data/TPN1_a22_reg_app.txt', header=TRUE)
 # reg.data <- read.table('TPN1_a22_reg_app.txt', header=TRUE)
 ```
 
-<u>I. **REGRESSION**</u>
+<br>
+<br>
+<u>I. **REGRESSION**</u>  
 
 **A.** **Exploration et préparation des données**
 
 Nous commençons par explorer les données.
-
 ```{r include=FALSE, warning=FALSE}
 summary.data = as.data.frame(apply(reg.data, 2, summary))
 n <- nrow(reg.data)
 p <- ncol(reg.data) - 1
 matplot(t(summary.data[3,-length(summary.data)]),type = "l", main = "Median", ylab = "value")
-```
-
--   La taille de l'échantillon est n = 500 et le nombre de prédicteurs p = 100. Notre jeu de données est donc de grande dimension (n\>p), ce qui sera fondamental dans la partie modèle.
-
-```{r echo=TRUE, warning=FALSE}
 summary.data <- as.data.frame(apply(reg.data, 2, summary))
 ```
-
+-   La taille de l'échantillon est n = 500 et le nombre de prédicteurs p = 100. Notre jeu de données est donc de grande dimension (n\>p), ce qui sera fondamental dans la partie modèle.
 -   En regardant les statistiques récapitulatives des différents prédicteurs, nous comprenons que tous ont une valeur médiane comprise entre 4,7 et 5,29 avec une valeur échelonnée de 0 à 10. Ils ont donc distributions identiques, il n'est donc pas nécessaire de mettre à l'échelle le prédicteur de données.
 
 Dans un premier temps, nous évaluerons rapidement l'ensemble du modèle dans sa complexité, sans chercher à l'améliorer ou à le simplifier, en appliquant une simple régression linéaire après la séparation des données en train et en test.
-
 ```{r include=FALSE, warning=FALSE}
 ########### training set and validation set ################
 set.seed(1729) # the Hardy CRamanujan number
@@ -86,13 +80,11 @@ reg.data.test  <- reg.data[-train,]
 ```
 
 Nous créons une fonction pour obtenir l'erreur quadratique moyenne des différents modèles que nous allons évaluer et comparer pour trouver le meilleur : <u>MSE</u>=<code>mean((y_test-y_predict)\^2)</code>.
-
 ```{r include=FALSE, warning=FALSE}
 MSE = function(y_test,y_predict){
   mean((y_test-y_predict)^2)
 }
 ```
-
 ```{r,echo=FALSE, warning=FALSE}
 full.model.reg <- lm(y~., data = reg.data.train)
 #summary(full.model.reg)
@@ -103,11 +95,11 @@ abline(0,1)
 sprintf("full.model.reg.mse = %3f",full.model.reg.mse)
 ```
 
-Cette première étude montre que le modèle tel qu'il inclut tous les prédicteurs : Xi i = 1,..., 100 génère déjà une bonne régression linéaire multidimensionnelle pour prédire y. L'idée est maintenant de déterminer un meilleur modèle pour obtenir la meilleure régression possible.
-
+Cette première étude montre que le modèle tel qu'il inclut tous les prédicteurs : Xi i = 1,..., 100 génère déjà une bonne régression linéaire multidimensionnelle pour prédire y. L'idée est maintenant de déterminer un meilleur modèle pour obtenir la meilleure régression possible.  
 ```{r include=FALSE, warning=FALSE}
 train.control <- trainControl(method = "cv", number = 5)
 ```
+
 
 **B. Comparaison des différentes méthodes utlisées**
 
@@ -128,8 +120,7 @@ En outre, la cross-validation peut également être utilisée dans un plus large
 Passons maintenant à la sélection du modèle : nous allons passer en revue toutes les méthodes vues en cours pour trouver les meilleurs modèles et les tester pour voir s'ils « correspondent » à notre jeu de données. Pour chaque méthode de déduction du modèle optimisé :\
 - Nous allons d'abord estimer les paramètres de réglage du modèle associé à la méthode actuelle en utilisant tous les plis sauf le pli k.\
 - A partir de là, nous obtiendrons les meilleurs paramètres de réglage associés à la méthode actuelle.\
-- Enfin, nous allons réestimer le modèle en utilisant tous les plis sauf le pli k, et nous l'évaluons avec le pli k en calculant son MSE, que nous stockons dans la table des cv_errors correspondant à la méthode courante.
-
+- Enfin, nous allons réestimer le modèle en utilisant tous les plis sauf le pli k, et nous l'évaluons avec le pli k en calculant son MSE, que nous stockons dans la table des cv_errors correspondant à la méthode courante.  
 ```{r,echo=FALSE, warning=FALSE}
 # 10-CV set up:
 kfolds <- 10
@@ -218,7 +209,6 @@ for (k in 1:kfolds){
 ```
 
 Nous sommes maintenant en mesure de comparer les résultats des performances de chaque méthode.
-
 ```{r echo=FALSE, warning=FALSE}
 noquote(sprintf("forward step regression model MSE: %.3f",mean(Forward_step_CV_MSE_vec)))
 noquote(sprintf("backward step regression MSE: %.3f",mean(Backward_step_CV_MSE_vec)))
@@ -228,8 +218,8 @@ noquote(sprintf("ridge model MSE: %.3f",mean(Ridge_CV_MSE_vec)))
 noquote(sprintf("full model regression MSE: %.3f",mean(Full_CV_MSE_vec)))
 ```
 
-**C. Analyse des résultats**
 
+**C. Analyse des résultats**
 ```{r echo=FALSE, warning=FALSE}
 modelDiagnostic <- function(model.reg){
   pMod <- fortify(model.reg)
@@ -296,7 +286,6 @@ modelObservations <- function(model.reg, data.test){
 En ce qui concerne la sélection du meilleur modèle, nous avons vu que le meilleur modèle est défini comme le modèle avec l'erreur de prédiction la plus faible (RMSE) et, par conséquent, la MSE la plus faible. Ainsi, le k-CV, une méthode "d'estimation d'erreur directe", a un avantage sur l'AIC, le BIC et le R2 ajusté vus en classe, en ce qu'il fournit une estimation directe de l'erreur de prédiction.
 
 Nous en déduisons que parmi tous les travaux que nous avons effectués, la sélection pas à pas précédente donne le modèle avec le meilleur RMSE en toutes circonstances. Ce modèle pas à pas devient alors notre meilleur modèle.
-
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 # Best model
 forward.step.model <- train(y ~., data = reg.data.train, method = "leapForward", 
@@ -315,9 +304,7 @@ ypred <- predict(step.model.linreg,newdata=reg.data.test)
 modelDiagnostic(step.model.linreg)
 noquote(sprintf("Best model MSE: %.3f", MSE(reg.data.test$y,ypred)))
 ```
-
 Le premier graphique représente les résidus par rapport aux valeurs prédites pour l'ensemble de données. La ligne bleue est un ajustement en douceur aux résidus, destiné à créer une tendance. Le deuxième graphique détermine si les résidus sont autour de zéro pour la plage de valeurs ajustées. Le dernier graphique (Q-Q des résidus) montre si les résidus suivent une distribution normale.
-
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 modelObservations(step.model.linreg, reg.data.test)
 ```
@@ -332,27 +319,27 @@ Pour résumer,
 
 -   Le pourcentage que la nouvelle observation se trouve dans l'intervalle de prédiction est : P \* 100.
 
-Nous pouvons donc conclure que notre meilleur modèle est passable. Cependant en le testant sur le jeu de données de test du site de l'UV, nous nous sommes rendu compte qu'il overfittait les dpnnées. Nous sommes donc repassés à un modèle de regression linéaire plus simple (prenant en compte tous les prédicteurs). Cela nous a effectivement permis de faire baisser la MSE de 177 à 157.
+Nous pouvons donc conclure que notre meilleur modèle est passable. Cependant en le testant sur le jeu de données de test du site de l'UV, nous nous sommes rendu compte qu'il overfittait les dpnnées. Nous sommes donc repassés à un modèle de regression linéaire plus simple (prenant en compte tous les prédicteurs). Cela nous a effectivement permis de faire baisser la MSE de 177 à 157.    
 
-**II. Classification**
+
+
+**II. CLASSIFICATION**
+
 
 **A. Exploration et préparation des données**
 
 ```{r include=FALSE, warning=FALSE}
 classif <- read.table(file='../data/TPN1_a22_clas_app.txt', header = TRUE)
+classif$y<-as.factor(classif$y)
 ```
 
 En explorant les données, nous observons que les colonnes de X1 à X45 sont des prédicteurs quantitatifs et les colonnes de X46 à X50 sont des prédicteurs qualitatifs. La dernière colonne y représente les classes à prédire (3 classes différentes). Nous déclarons cette colonne comme facteur contrairement aux autres colonnes qualitatives que nous comptons prendre en compte dans nos fonctions de dicrimination.
-
-```{r}
-classif$y<-as.factor(classif$y)
-```
 
 Nous avons ensuite cherché à analyser les éventuels liens et dépendances entre prédicteurs. En raison de la grande taille des données, il n'etait pas possible de visualiser les dépendances entre toutes les combinaisons possibles en même temps, parmi toutes les variables existantes.
 
 Nous utilisons donc la correlation de Pearson pour identifier s'il existe une liaison linéaire ou de rangement afin de diminuer le nombre de prédicteurs, d'améliorer la précision du modèle et de réduire le temps d'exécution. N'ayant pas identifié de corrélations saillantes avec Pearson, nous avons ensuite tenté de réduire le nombre de variables utiles en les transformant avec une PCA. Cette PCA ne nous a pas permis non plus de réduire la dimension de notre problème de regression.
 
-Nous avons donc finalement décidé de commencer à comparer nos modèles en prenant en compte tous les prédicteurs, et reporter à plus tard une eventuelle selection des variables. Avant de nous lancer dans les différentes méthodes de classification nous séparons enfin les données en test set (1/3 des données) et en train set (2/3 des données). Pour que les résultats soient reproductibles, une seed est fixée (à 1729).
+Nous avons donc finalement décidé de commencer à comparer nos modèles en prenant en compte tous les prédicteurs, et reporter à plus tard une eventuelle selection des variables. Avant de nous lancer dans les différentes méthodes de classification nous séparons enfin les données en test set (1/3 des données) et en train set (2/3 des données). Pour que les résultats soient reproductibles, une seed est fixée (à 1729).  
 
 ```{r include=FALSE, warning=FALSE}
 # separation test / train
@@ -366,11 +353,12 @@ classif.train <- classif[train,]
 classif.test <- classif[-train,]
 ```
 
+
 **B. Choix d'un modèle de classification et optimisation de ce modèle**
 
 Nous avons testé 7 classifieurs différents : Linear Discriminant Analysis (LDA), Quadratic Discriminant Analysis (QDA), Regularized Discriminant Analysis (RDA), Naive Bayes (NB), Logistic Regression, Classification / Decision Tree et K-Nearest Neighbor (KNN). Les fonctions utilisées sont respectivement : lda, qda, rda, naive_bayes, multinom, rpart et knn.
 
-Le but était de comparer les performances obtenues avec ces différentes méthodes, d'optimiser les différents modèles et de les stabiliser avec de la cross-validation notamment. Nous avons ensuite comparé leurs performances avec plusieurs outils : comparaison du taux d'erreur moyenné sur les K-fold de la cross validation, et courbes ROC multinomiales.
+Le but était de comparer les performances obtenues avec ces différentes méthodes, d'optimiser les différents modèles et de les stabiliser avec de la cross-validation notamment. Nous avons ensuite comparé leurs performances avec plusieurs outils : comparaison du taux d'erreur moyenné sur les K-fold de la cross validation, et courbes ROC multinomiales.  
 
 1.  **Tests de différents classifieurs : exemple des arbres et de la Regularized Discriminant Analysis**
 
@@ -442,7 +430,6 @@ err.qda <- 0.37125748502994
 2.  **Comparaison des performances des modèles : courbes ROC, et tableau récapitulatif des performances sur la Cross-Validation**
 
 Nous pouvons calculer le taux d'erreur empirique en deux manière, prenons LDA comme exemple:
-
 ```{r}
 # moyen1
 err.lda <- mean(pred.classif.lda$class!=classif.test$y)
@@ -451,9 +438,8 @@ matrix.conf.lda <- table(classif.test$y, pred.classif.lda$class)
 err.lda <- 1-sum(diag(matrix.conf.lda))/nb.test
 ```
 
-Donc, nous obtenons ainsi le taux d'erreur de chaque méthode.
-
-```{r}
+Nous obtenons ainsi le taux d'erreur de chaque méthode.
+```{r, echo=FALSE}
 sprintf("Taux d'erreur de LDA : %f",err.lda)                                    # 0.491018
 sprintf("Taux d'erreur de QDA : %f",err.qda)                                    # 0.347305
 sprintf("Taux d'erreur de RDA : %f",err.rda)                                    # 0.3413174
@@ -461,9 +447,9 @@ sprintf("Taux d'erreur de Naive Bayes : %f",err.naive)                          
 sprintf("Taux d'erreur de classification/decision trees : %f",err.tree)         # 0.4491018
 sprintf("Taux d'erreur de multinomial logistic regression : %f",err.logistreg)  # 0.485030
 ```
+Nous constatons que QDA, RDA et Naive Bayes ont les meilleures performances.
 
 Ensuite, nous affichons les courbes ROC adaptées à un problème de classification multinomiale en important la library "pROC".
-
 ```{r, include=FALSE, warning=FALSE}
 multiroc.lda <- multiclass.roc(classif.test$y,as.vector(pred.classif.lda$posterior[,1])) 
 # multiroc.qda <- multiclass.roc(classif.test$y,as.vector(pred.qda$posterior[,1])) 
@@ -493,80 +479,36 @@ plot.roc(rs.lda[[1]], col='black');plot.roc(rs.rda[[1]], col='green', add=TRUE);
 ```
 
 <center>
-   <div>
-      <div>
         ![Comparaison des courbes ROC](/Users/cecileasselin/Desktop/SY19/TD4/Git_TP4_SY19/Rendu/figures/ROC.png){width="485"}
-        </div>
-    </div>
 </center>
-
-Test d'insertion d'image ![Comparaison des courbes ROC](/Users/cecileasselin/Desktop/SY19/TD4/Git_TP4_SY19/Rendu/figures/ROC.png)
 
 Plus la surface sous la courbe est grande, plus la méthode est considérée "performante". On affiche toutes les courbes dans la même figure pour mieux comparer.
 
 Nous pouvons donc résumer que la performance des modèles dans ce cas-là est NB \> LDA \> RDA \> Logistic Regression \> Decision Tree \> QDA.
 
-Ensuite, nous avons voulu régulariser nos performances avec de la Cross-Validation. Nous avons choisi d'opérer avec 10 folds. Voici un exemple avec la regression linéaire
-```{r}
-# K<-10
-# n<-nrow(classif)
-# folds<-sample(1:K,n,replace=TRUE)
-# 
-# cv.err<-rep(0,10)
-# 
-# plot.new()
-# par(mfrow=c(1,1)) 
-# plot.cv.error<-function(data,x.title){
-#   means.errs<-apply(data,2,mean)#mean(cv.err[,1]) # colMeans(data)
-#   
-#   stderr<-function(x) sd(x)/sqrt(length(x))
-#   std.errs<-apply(data,2,stderr)
-#   plot(data,xlab=x.title,type="b",ylab="CV.error")
-# }
-# 
-# for(i in (1:10)){
-#   for(k in 1:K){
-#     fold.test<-classif[folds==k,]
-#     fold.train<-classif[folds!=k,]
-#     fold.classif<-lda(y~.,data=fold.train)
-#     fold.predict<-predict(fold.classif,newdata=fold.test)
-#     cv.err[i]<-cv.err[i]+mean(fold.predict$class!=fold.test$y)
-#   } 
-#   cv.err[i]<-cv.err[i]/n
-# }
-# plot.cv.error(cv.err,x.title = "LDA - 10 crossvalidation")
-```
+Ensuite, nous avons voulu régulariser nos performances avec de la Cross-Validation. Nous avons choisi d'opérer avec 10 folds. 
+<center>
+        ![Comparaison des moyennes du taux d'erreur sur la validation croisée](/Users/cecileasselin/Desktop/SY19/TD4/Git_TP4_SY19/Rendu/figures/sum_up_cv.png){width="200"}
+</center>
+En comparant le taux d'erreur moyen obtenu sur les 10 folds pour chaque modèle, nous en venons à la conclusion que RDA semble le meilleur modèle (compromis entre un taux d'erreur faible, et un modèle qui reste relativement peu complexe). Nous n'avons pas retenu RDA n'ayant pu vérifier de manière fiable l'hypothèse naive d'indépendance entre predicteurs, et car avec la validation croisée il nous semble qu'en moyenne cette methode reste moins performante que la RDA.
 
-En comparant le taux d'erreur moyen obtenu sur les 10 folds pour chaque modèle, nous en venons à la conclusion que RDA est toujours le meilleur modèle
 
-Choisissez un modèle Selon la performance du taux d'erreur, de la courbe ROC et de la k-fold cross-validation de tous les 7 modèles ci-dessus, nous choisissons enfin la modèle RDA(Regularized discriminant analysis) pour classifier les données.
+**C. Analyse des résultats** 
+
+Nous avons enfin effectué le test de Mc Nemar pour évaluer la significativité des ecarts de performance.
+L'écart de performance entre la LDA et la QDA est jugé non significatif, alors qu'entre la LDA et la RDA cet écart est significatif. Cela renforce notre choix pour la méthode RDA qui est celle que nous avons finalement choisi.
+
+Pour l'apprentissage final du modèle de RDA nous avons procédé par validation croisée sur l'ensemble des données.
 
 ```{r}
-### codes complets pour RDA??
+# apprentissage du modèle : on cherche les meilleurs paramètres lambda et gamma pour la RDA
+cv_5_grid <- trainControl(method = "cv", number = 5)
+fit_rda_grid <- train(y ~ ., data = classif, method = "rda", trControl = cv_5_grid)
+# The final values used for the model were gamma = 0 and lambda = 0.5
+
+# création du modèle avec les paramètres appris
+model.cls <- rda(y ~ ., data = classif, gamma = 0, lambda = 0.5)
 ```
 
-############# 
-
-**3. Analyse des résultats** Nous avons enfin effectué le test de Mc Nemar pour évaluer la significativité des ecarts de performance.
-
-############ Archives
-
-Test d'insertion d'image ![Ceci est un test](/Users/cecileasselin/Desktop/SY19/TD4/test_plot.png)
-
-Voici les codes pour la méthode kNN:
-
-```{r}
-# for(k in 1:30){
-#   classifier_knn <- knn(train = train_scale,
-#                         test = test_scale,
-#                         cl = classif.train$y,
-#                         k = k)
-#   misClassError <- mean(classifier_knn != classif.test$y)
-#   print(paste(k, '- Accuracy =', 1-misClassError))
-#   err.knn <- min(err.knn, misClassError)
-#   plot(k,1-misClassError)
-# }
-# print(paste('maxAccuracy =', 1-err.knn))
-```
-
-figure !!!!
+En testant nos performances sur le site de test de l'UV  nous observons une accuracy de 0.71 sur les données de test. Ce resultat au dessus de la baseline est satisfaisant car on observe une amelioration des performances entre la classification opérée sur le set de validation (classifieur entrainé avec le set d'apprentissage) et celle opérée sur le dataset de test auquel nous n'avons pas accès (classifieur entrainé sur toutes les données disponible).
+Nous avons donc évité l'ecueil principal de l'overfitting.
