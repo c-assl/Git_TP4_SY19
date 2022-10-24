@@ -1,5 +1,8 @@
 ---
-title: "Rapport TP4 SY19 GR D2P1G"
+title: "Rapport de projet 1 SY19 A22"
+geometry: "left=1.25cm,right=1.25cm,top=1cm,bottom=1cm"
+fig_width: 5 
+fig_height: 3
 output:
   pdf_document:
     latex_engine: xelatex
@@ -7,23 +10,10 @@ output:
   html_document:
     df_print: paged
 ---
-
-**Rapport de projet 1 SY19 A22 - Sun Jingwen, Ho Nhu Hoang, Asselin Cecile**\
-\
-**Sommaire**
-
-I. Regression
-
-  1.  Exploration et préparation des données
-  2.  Choix d'un modèle de regression et optimisation de ce modèle
-  3.  Analyse des résultats
-
-II\. Classification
-
-  1.  Exploration et préparation des données
-  2.  Choix d'un modèle de classification et optimisation de ce modèle
-  3.  Analyse des résultats  
+**Groupe D2 P1 : Sun Jingwen, Ho Nhu Hoang, Asselin Cecile**
 ```{r message=TRUE, warning=FALSE, include=FALSE}
+# knitr::opts_chunk$set(fig.width=6, fig.height=4) 
+
 library(gridExtra)
 library(ggplot2)
 library(tidyverse)
@@ -46,10 +36,10 @@ reg.data <- read.table('../data/TPN1_a22_reg_app.txt', header=TRUE)
 # reg.data <- read.table('TPN1_a22_reg_app.txt', header=TRUE)
 ```
 
-<br>
-<br>
+<div>
+\hfill\break
 <u>I. **REGRESSION**</u>  
-
+  <div>
 **A.** **Exploration et préparation des données**
 
 Nous commençons par explorer les données.
@@ -80,7 +70,7 @@ reg.data.test  <- reg.data[-train,]
 ```
 
 Nous créons une fonction pour obtenir l'erreur quadratique moyenne des différents modèles que nous allons évaluer et comparer pour trouver le meilleur : <u>MSE</u>=<code>mean((y_test-y_predict)\^2)</code>.
-```{r include=FALSE, warning=FALSE}
+```{r fig2, fig.height = 1, fig.width = 1, fig.align = "center", include=FALSE, warning=FALSE}
 MSE = function(y_test,y_predict){
   mean((y_test-y_predict)^2)
 }
@@ -99,8 +89,9 @@ Cette première étude montre que le modèle tel qu'il inclut tous les prédicte
 ```{r include=FALSE, warning=FALSE}
 train.control <- trainControl(method = "cv", number = 5)
 ```
-
-
+  </div>
+\hfill\break
+  <div>
 **B. Comparaison des différentes méthodes utlisées**
 
 On utilise les méthodes suivantes avec la k-fold cross-validation où k=10 :
@@ -217,8 +208,9 @@ noquote(sprintf("lasso net model MSE: %.3f",mean(Lasso_CV_MSE_vec)))
 noquote(sprintf("ridge model MSE: %.3f",mean(Ridge_CV_MSE_vec)))
 noquote(sprintf("full model regression MSE: %.3f",mean(Full_CV_MSE_vec)))
 ```
-
-
+  </div>
+\hfill\break
+  <div>
 **C. Analyse des résultats**
 ```{r echo=FALSE, warning=FALSE}
 modelDiagnostic <- function(model.reg){
@@ -320,12 +312,13 @@ Pour résumer,
 -   Le pourcentage que la nouvelle observation se trouve dans l'intervalle de prédiction est : P \* 100.
 
 Nous pouvons donc conclure que notre meilleur modèle est passable. Cependant en le testant sur le jeu de données de test du site de l'UV, nous nous sommes rendu compte qu'il overfittait les dpnnées. Nous sommes donc repassés à un modèle de regression linéaire plus simple (prenant en compte tous les prédicteurs). Cela nous a effectivement permis de faire baisser la MSE de 177 à 157.    
+  </div>
+</div>
 
-
-
+\newpage
 **II. CLASSIFICATION**
 
-
+\hfill\break
 **A. Exploration et préparation des données**
 
 ```{r include=FALSE, warning=FALSE}
@@ -353,7 +346,7 @@ classif.train <- classif[train,]
 classif.test <- classif[-train,]
 ```
 
-
+\hfill\break
 **B. Choix d'un modèle de classification et optimisation de ce modèle**
 
 Nous avons testé 7 classifieurs différents : Linear Discriminant Analysis (LDA), Quadratic Discriminant Analysis (QDA), Regularized Discriminant Analysis (RDA), Naive Bayes (NB), Logistic Regression, Classification / Decision Tree et K-Nearest Neighbor (KNN). Les fonctions utilisées sont respectivement : lda, qda, rda, naive_bayes, multinom, rpart et knn.
@@ -366,7 +359,7 @@ Voici des extraits du code utilisé pour la méthode des arbres de décision :
 
 ```{r}
 tree <- rpart(y~., data = classif.train, method="class",subset=train, parms = list(split = 'gini'))
-rpart.plot(tree, box.palette="RdBu", shadow.col="gray",fallen.leaves=FALSE)
+# rpart.plot(tree, box.palette="RdBu", shadow.col="gray",fallen.leaves=FALSE)
 plotcp(tree)
 idx<-which.min(tree$cptable[,"xerror"])
 cp<-tree$cptable[idx,"CP"]
@@ -477,7 +470,6 @@ plot.roc(rs.lda[[1]], col='black');plot.roc(rs.rda[[1]], col='green', add=TRUE);
 
 # plot.roc(rs.qda[[1]], col='red', add=TRUE);
 ```
-
 <center>
         ![Comparaison des courbes ROC](/Users/cecileasselin/Desktop/SY19/TD4/Git_TP4_SY19/Rendu/figures/ROC.png){width="485"}
 </center>
@@ -488,11 +480,12 @@ Nous pouvons donc résumer que la performance des modèles dans ce cas-là est N
 
 Ensuite, nous avons voulu régulariser nos performances avec de la Cross-Validation. Nous avons choisi d'opérer avec 10 folds. 
 <center>
-        ![Comparaison des moyennes du taux d'erreur sur la validation croisée](/Users/cecileasselin/Desktop/SY19/TD4/Git_TP4_SY19/Rendu/figures/sum_up_cv.png){width="200"}
+    ![Comparaison des moyennes du taux d'erreur sur la validation croisée](/Users/cecileasselin/Desktop/SY19/TD4/Git_TP4_SY19/Rendu/figures/sum_up_cv.png){width="200"}
 </center>
+
 En comparant le taux d'erreur moyen obtenu sur les 10 folds pour chaque modèle, nous en venons à la conclusion que RDA semble le meilleur modèle (compromis entre un taux d'erreur faible, et un modèle qui reste relativement peu complexe). Nous n'avons pas retenu RDA n'ayant pu vérifier de manière fiable l'hypothèse naive d'indépendance entre predicteurs, et car avec la validation croisée il nous semble qu'en moyenne cette methode reste moins performante que la RDA.
 
-
+\hfill\break
 **C. Analyse des résultats** 
 
 Nous avons enfin effectué le test de Mc Nemar pour évaluer la significativité des ecarts de performance.
