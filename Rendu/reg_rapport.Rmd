@@ -1,0 +1,301 @@
+---
+#title: "Rapport TP4 SY19 GR D2P1G"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+  html_notebook: default
+---
+
+```{r message=TRUE, warning=FALSE, include=FALSE}
+library(gridExtra)
+library(ggplot2)
+library(tidyverse)
+library(caret)
+library(leaps)
+library(MASS)
+library(glmnet)
+library(gam)
+
+#reg.data <- read.table('../data/TPN1_a22_reg_app.txt', header=TRUE)
+reg.data <- read.table('TPN1_a22_reg_app.txt', header=TRUE)
+```
+
+<u>III. ***REGRESSION***</u>
+
+**A.** **Exploration et préparation des données**
+
+La première étape de l'étude de régression consiste à explorer les données.
+```{r include=FALSE, warning=FALSE}
+summary.data = as.data.frame(apply(reg.data, 2, summary))
+n <- nrow(reg.data)
+p <- ncol(reg.data) - 1
+matplot(t(summary.data[3,-length(summary.data)]),type = "l", main = "Median", ylab = "value")
+```
+
+- La taille de l'échantillon n = 500 et le nombre de prédicteurs p = 100. Nous en déduisons donc que notre jeu de données est de grande dimension et n\>p, ce qui sera fondamental dans la partie modèle. 
+```{r echo=TRUE, warning=FALSE}
+summary.data <- as.data.frame(apply(reg.data, 2, summary))
+```
+
+- En regardant les statistiques récapitulatives des différents prédicteurs, nous comprenons que tous ont une valeur médiane comprise entre 4,7 et 5,29 avec une valeur échelonnée de 0 à 10. Ils ont donc distributions identiques, il n'est donc pas nécessaire de mettre à l'échelle le prédicteur de données. 
+
+Dans un premier temps, nous évaluerons rapidement l'ensemble du modèle dans sa complexité, sans chercher à l'améliorer ou à le simplifier, en appliquant une simple régression linéaire après la séparation des données en train et en test.
+```{r include=FALSE, warning=FALSE}
+########### training set and validation set ################
+set.seed(1729) # the Hardy CRamanujan number
+rows <- nrow(reg.data)
+cols <- ncol(reg.data) - 1
+train_size <- 2 / 3
+nb_train <- round(train_size * rows)
+nb_test <- rows - nb_train
+# training set
+train <- sample(1:rows, nb_train)
+reg.data.train <- reg.data[train,]
+# validation set
+reg.data.test  <- reg.data[-train,]
+```
+
+Nous créons une fonction pour obtenir l'erreur quadratique moyenne des différents modèles que nous allons évaluer et comparer pour trouver le meilleur : <u>MSE</u>=<code>mean((y_test-y_predict)^2)</code>.
+```{r include=FALSE, warning=FALSE}
+MSE = function(y_test,y_predict){
+  mean((y_test-y_predict)^2)
+}
+```
+
+```{r,echo=FALSE, warning=FALSE}
+full.model.reg <- lm(y~., data = reg.data.train)
+#summary(full.model.reg)
+predictions <- predict(full.model.reg, newdata = reg.data.test)
+full.model.reg.mse <- MSE(reg.data.test$y, predictions)
+plot(reg.data.test$y, predictions)
+abline(0,1)
+sprintf("full.model.reg.mse = %3f",full.model.reg.mse)
+```
+
+Cette première étude montre que le modèle tel qu'il inclut tous les prédicteurs : Xi i = 1,..., 100 génère déjà une bonne régression linéaire multidimensionnelle pour prédire y. L'idée est maintenant de déterminer un meilleur modèle pour obtenir la meilleure régression possible. 
+
+```{r include=FALSE, warning=FALSE}
+train.control <- trainControl(method = "cv", number = 5)
+```
+
+**B. Comparaison des différentes méthodes utlisées** 
+
+On utilise les méthodes suivantes avec la k-fold cross-validation où k=10 : 
+
+- Stepwise selection: <u>1 Forward selection</u> <u>2 Backward selection</u>
+
+- Penelized regression: <u>1 Ridge regression</u> <u>2 Lasso regression</u> <u>3 Elasticnet regression</u>
+
+On pense que la méthode de sélection du meilleur sous-ensemble est très puissante mais, pour des raisons de calcul, elle ne peut pas être appliquée ici car p est trop grand. De plus, la sélection du meilleur sous-ensemble, même si elle était possible ici, peut également souffrir de problèmes statistiques lorsque p est grand : plus l'espace de recherche est grand, plus il est probable de trouver des modèles qui semblent bons sur les données d'apprentissage, même s'ils ont aucun pouvoir prédictif sur les données futures. Ainsi, un espace de recherche énorme peut conduire à un surajustement et à une variance élevée des estimations de coefficients. 
+
+Pour ces deux raisons, les méthodes pas à pas explorant un ensemble beaucoup plus restreint de modèles représentent ici de très bonnes alternatives à la meilleure sélection de sous-ensemble que nous allons donc mettre en œuvre. 
+
+De plus, après avoir vu en classe que les méthodes des plus proches voisins peuvent mal fonctionner lorsque p est grand car les plus proches voisins ont tendance à être éloignés en grandes dimensions, nous avons décidé de ne pas les utiliser dans le CV suivant en raison du grand nombre de prédicteurs disponibles ici.
+
+En outre, il peut également être utilisé dans un plus large éventail de tâches de sélection de modèles. Comme chaque ensemble d'apprentissage est seulement (K - 1)/K aussi grand que l'ensemble d'apprentissage d'origine, les estimations d'erreur de prédiction seront généralement biaisées vers le haut. Ce biais est minimisé lorsque K = n (LOOCV), mais cette estimation a une variance élevée, car les estimations pour chaque pli sont fortement corrélées. K = 5, compte tenu de notre grande taille d'échantillon n, fournit un bon compromis pour ce compromis biais-variance.
+
+Passons maintenant à la sélection du modèle : nous allons passer en revue toutes les méthodes vues en cours pour trouver les meilleurs modèles et les tester pour voir s'ils « correspondent » à notre jeu de données. Pour chaque méthode de déduction du modèle optimisé : -Nous allons d'abord estimer les paramètres de réglage du modèle associé à la méthode actuelle en utilisant tous les plis sauf le pli k. -A partir de là, nous obtiendrons les meilleurs paramètres de réglage associés à la méthode actuelle. -Enfin, nous allons réestimer le modèle en utilisant tous les plis sauf le pli k, et nous l'évaluons avec le pli k en calculant son MSE, que nous stockons dans la table des cv_errors correspondant à la méthode courante.
+
+```{r,echo=FALSE, warning=FALSE}
+# 10-CV set up:
+kfolds <- 10
+n <- nrow(reg.data)
+p <- ncol(reg.data)
+ntst <- n/kfolds
+
+## Define fold_ids
+fold_ids      <- rep(seq(kfolds), ceiling(n / kfolds))
+fold_ids      <- fold_ids[1:n]
+fold_ids      <- sample(fold_ids, length(fold_ids))
+
+## Initialize vectors to store CV errors
+Elastic_CV_MSE_vec  <- vector(length = kfolds, mode = "numeric")
+Lasso_CV_MSE_vec  <-vector(length = kfolds, mode = "numeric")
+Ridge_CV_MSE_vec  <-vector(length = kfolds, mode = "numeric")
+Forward_step_CV_MSE_vec  <-vector(length = kfolds, mode = "numeric")
+Backward_step_CV_MSE_vec  <-vector(length = kfolds, mode = "numeric")
+Full_CV_MSE_vec  <-vector(length = kfolds, mode = "numeric")
+
+```
+
+```{r,echo=FALSE, warning=FALSE}
+for (k in 1:kfolds){
+  ############## STEPWISE SELECTION #############
+
+  forward.step.model <- train(y ~., data = reg.data[which(fold_ids != k),], method = "leapForward", tuneGrid = data.frame(nvmax = 1:100), trControl = train.control)
+  step.predictor.names <- names(coef(forward.step.model$finalModel, forward.step.model$bestTune$nvmax))[1:forward.step.model$bestTune$nvmax+1]
+
+  step.model.linreg = lm(paste("y","~", paste(step.predictor.names, collapse=" + ") ), data = reg.data[which(fold_ids != k),])
+  predictions <- predict(step.model.linreg,newdata=reg.data[which(fold_ids == k),])
+
+  Forward_step_CV_MSE_vec[k] <- MSE(reg.data[which(fold_ids == k),p], predictions)
+
+  backward.step.model <- train(y ~., data = reg.data[which(fold_ids != k),],
+                            method = "leapBackward",
+                            tuneGrid = data.frame(nvmax = 1:100),
+                            trControl = train.control
+  )
+  step.predictor.names <- names(coef(backward.step.model$finalModel, backward.step.model$bestTune$nvmax))[1:backward.step.model$bestTune$nvmax+1]
+
+  step.model.linreg = lm(paste("y","~", paste(step.predictor.names, collapse=" + ") ), data = reg.data[which(fold_ids != k),])
+  predictions <- predict(step.model.linreg,newdata=reg.data[which(fold_ids == k),])
+
+  Backward_step_CV_MSE_vec[k] <- MSE(reg.data[which(fold_ids == k),p], predictions)
+
+  ############# PENALIZED REGRESSION ###########
+  x <- model.matrix(y~., reg.data[which(fold_ids != k),-p-1])[,-1]
+
+  y <- reg.data[which(fold_ids != k),]$y
+  x.test <- model.matrix(y~., reg.data[which(fold_ids == k),-p-1])[,-1]
+
+  ########## ELASTICNET REGRESSION #############
+  elastic <- train(y ~., data = reg.data[which(fold_ids != k),],
+                   method = "glmnet",
+                   trControl = train.control,
+                   tuneLength = 10)
+
+  elastic.alpha <- elastic$bestTune[1,1]
+  elastic.lambda <- elastic$bestTune[1,2]
+
+  fit.elsatic <- glmnet(x, reg.data[which(fold_ids != k),p], lambda=elastic.lambda, alpha = elastic.alpha)
+  predictions  <- predict(fit.elsatic, x.test)
+
+  Elastic_CV_MSE_vec[k] <- MSE(reg.data[which(fold_ids == k),p], predictions)
+
+  ########## RIDGE REGRESSION #############
+  cv.ridge <- cv.glmnet(x, y, alpha = 0)
+
+  fit.ridge <- glmnet(x, reg.data[which(fold_ids != k),p], lambda=cv.ridge$lambda.min, alpha = 0)
+  predictions  <- predict(fit.ridge, x.test)
+  Ridge_CV_MSE_vec[k] <- MSE(reg.data[which(fold_ids == k),p], predictions)
+
+  ########## LASSO REGRESSION #############
+  cv.lasso <- cv.glmnet(x, y, alpha = 1)
+  fit.lasso <- glmnet(x, reg.data[which(fold_ids != k),p], lambda=cv.lasso$lambda.min, alpha = 1)
+  predictions  <- predict(fit.lasso, x.test)
+  Lasso_CV_MSE_vec[k] <- MSE(reg.data[which(fold_ids == k),p], predictions)
+
+  #REGRESSION OBTAINED W/ THE FULL MODEL (NO SELECTION)
+  model.linreg = lm(y~.,  data = reg.data[which(fold_ids != k),])
+  predictions <- predict(model.linreg,newdata=reg.data[which(fold_ids == k),])
+
+  Full_CV_MSE_vec[k] <- MSE(reg.data[which(fold_ids == k),p], predictions)
+}
+```
+
+Nous sommes maintenant en mesure de comparer les résultats des performances de chaque méthode.
+
+```{r echo=FALSE, warning=FALSE}
+noquote(sprintf("forward step regression model MSE: %.3f",mean(Forward_step_CV_MSE_vec)))
+noquote(sprintf("backward step regression MSE: %.3f",mean(Backward_step_CV_MSE_vec)))
+noquote(sprintf("elastic net model MSE: %.3f",mean(Elastic_CV_MSE_vec)))
+noquote(sprintf("lasso net model MSE: %.3f",mean(Lasso_CV_MSE_vec)))
+noquote(sprintf("ridge model MSE: %.3f",mean(Ridge_CV_MSE_vec)))
+noquote(sprintf("full model regression MSE: %.3f",mean(Full_CV_MSE_vec)))
+```
+
+**C. Analyse des résultats** 
+
+```{r echo=FALSE, warning=FALSE}
+modelDiagnostic <- function(model.reg){
+  pMod <- fortify(model.reg)
+
+  # the residuals vs predicted values
+  p1 <- ggplot(pMod, aes(x=.fitted, y=.resid))+geom_point() +
+    geom_smooth(se=FALSE)+geom_hline(yintercept=0, col="red", linetype="dashed") +
+    xlab("Fitted Values")+ylab("Residuals") +
+    ggtitle("Residual vs Fitted Plot")
+
+  pMod$.qqnorm <- qqnorm(pMod$.stdresid, plot.it=FALSE)$x
+  y <- quantile(pMod$.stdresid, c(0.25, 0.75))   # Find the 1st and 3rd quartiles
+  x <- quantile(pMod$.qqnorm  , c(0.25, 0.75))   # Find the 1st and 3rd quartiles
+  slope <- diff(y) / diff(x)                     # Compute the line slope
+  int <- y[1] - slope * x[1]                     # Compute the line intercept
+
+  # Create residuals QQ plot.
+  p2 <- ggplot(pMod, aes(.qqnorm, .stdresid)) +
+    geom_point(na.rm = TRUE) +
+    geom_abline(intercept=int, slope=slope, color="red")           +
+    xlab("Theoretical Quantiles") + ylab("Standardized Residuals") +
+    ggtitle("Normal Q-Q Plot")
+
+  # Create residuals histogram plot.
+  p3 <- ggplot(data=pMod, aes(x=.resid)) +
+    geom_histogram(binwidth=0.5, fill="blue") + xlab("Residuals") + ggtitle("Distribution of Residuals")
+
+  grid.arrange(p1, p3, p2, nrow = 1 , top="Model Diagnostic Plots")
+}
+
+modelObservations <- function(model.reg, data.test){
+  #plotting ytest and ypred
+  ypred <- predict(model.reg,data.test)
+  #plot(data.test$y,ypred, main="predicted values versus test values", xlab="predicted y", ylab="test y")
+  #abline(0,1)
+
+  # getting the observations outside the prediction interval
+  ic.error.bar <- function(x, lower, upper, length=0.1){
+    arrows(x, upper, x, lower, angle=90, code=3, length=length)
+  }
+
+  #Calculate the prediction intervals of 𝑦0 (the predicted value), with the predict command using the interval = "prediction" option
+  pred.test.ip <- predict(model.reg, interval='prediction', newdata = data.test)
+  ytest <- data.test$y
+
+  # get the observations being outside the prediction interval
+  idx.obs.out.ip <- which((ytest<pred.test.ip[,2])|(ytest>pred.test.ip[,3]))
+
+  # Plotting the graph with the prediction intervals.
+  plot(pred.test.ip[, 1], ytest, pch=19, col='blue', ylim=range(pred.test.ip, ytest),
+       main=" predicted values and the 95% PI versus the observed values.",
+       xlab="predicted y",
+       ylab="test y")
+  abline(0,1)
+  ic.error.bar(pred.test.ip[, 1], pred.test.ip[, 2], pred.test.ip[, 3])
+  points(pred.test.ip[idx.obs.out.ip, 1], ytest[idx.obs.out.ip], pch=19, col="red")
+
+  #print(paste("number of observed values (𝑦𝑖) outside the prediction interval among ", length(ytest), " observed values in total: ", length(idx.obs.out.ip)))
+  #returns the percentage that the new observation is in the prediction interval
+  #1 - (length(idx.obs.out.ip)/length(ytest))
+}
+```
+
+En ce qui concerne la sélection du meilleur modèle, nous avons vu que le meilleur modèle est défini comme le modèle avec l'erreur de prédiction la plus faible (RMSE) et, par conséquent, la MSE la plus faible. Ainsi, le k-CV, une méthode "d'estimation d'erreur directe", a un avantage sur l'AIC, le BIC et le R2 ajusté vus en classe, en ce qu'il fournit une estimation directe de l'erreur de prédiction.
+
+Nous en déduisons que parmi tous les travaux que nous avons effectués, la sélection pas à pas précédente donne le modèle avec le meilleur RMSE en toutes circonstances. Ce modèle pas à pas devient alors notre meilleur modèle.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Best model
+forward.step.model <- train(y ~., data = reg.data.train, method = "leapForward", 
+                tuneGrid = data.frame(nvmax = 1:100), trControl = train.control)
+
+step.predictor.names <- names(coef(forward.step.model$finalModel, 
+  forward.step.model$bestTune$nvmax))[1:forward.step.model$bestTune$nvmax+1]
+
+step.model.linreg = lm(paste("y","~", paste(step.predictor.names, collapse=" + ") ), 
+                       data = reg.data.train)
+
+ypred <- predict(step.model.linreg,newdata=reg.data.test)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+modelDiagnostic(step.model.linreg)
+noquote(sprintf("Best model MSE: %.3f", MSE(reg.data.test$y,ypred)))
+```
+
+Le premier graphique représente les résidus par rapport aux valeurs prédites pour l'ensemble de données. La ligne bleue est un ajustement en douceur aux résidus, destiné à créer une tendance. Le deuxième graphique détermine si les résidus sont autour de zéro pour la plage de valeurs ajustées. Le dernier graphique (Q-Q des résidus) montre si les résidus suivent une distribution normale.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+modelObservations(step.model.linreg, reg.data.test)
+```
+
+Pour résumer,
+
+- <code>summary(step.model.linreg)</code> nous montre que la plupart de nos prédicteurs sélectionnés sont significatifs et que, selon la p-value (=2.2e-16 \<0.05 =\> nous rejetons le H0 hypothèse que tous les coefficients bêta j sont égaux à 0), notre modèle est globalement significatif pour expliquer la réponse variable y.
+
+- Les diagrammes de diagnostic du modèle ci-dessus montrent que le modèle est passable. Il y a une bonne dispersion des résidus autour de zéro pour la plage des valeurs ajustées (la valeur moyenne des résidus est, en fait, nulle). De plus, le graphique Q-Q des résidus et l'histogramme montrent une distribution plutôt normale. 
+
+- Nous observons que les intervalles de prédiction sont assez larges car l'intervalle de prédiction 𝑦0 prend en compte l'incertitude autour de lui (la variable aléatoire) et la prédiction moyenne. De plus, nous pouvons voir très peu de valeurs observées en dehors de l'intervalle de prédiction (en point rouge).
+
+- Le pourcentage que la nouvelle observation se trouve dans l'intervalle de prédiction est : P * 100.
+
+Nous pouvons donc conclure que notre meilleur modèle est passable et que sa prédiction est très bonne pour un jeu de données de test indépendant du jeu de données qui a été utilisé pour construire et entraîner notre modèle. Nous sommes donc satisfaits de notre étude et prêts à utiliser notre meilleur modèle pour le jour des évaluations.
