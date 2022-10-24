@@ -1,0 +1,131 @@
+---
+title: "Rapport TP4 SY19 GR D2P1G"
+output:
+  html_notebook: default
+  pdf_document: default
+---
+
+Voici notre rapport pour le TP4 de SY19.
+
+Nous avons organisé notre travail comme ceci:
+
+
+Partie I. Classification
+
+1.1 Présentation des données
+```{r}
+classif <- read.table(file='TPN1_a22_clas_app.txt', header = TRUE)
+head(classif) 
+summary(classif)
+```
+Nous trouvons que les données de X1 à X45 sont des données quantitatives et les données de X46 à X50 sont des données qualitatives. y est la donnée de classe à prédire qui contient 3 classes différentes.
+Nous déclarons la variable y comme facteur car ce sont des données qualitatives.
+```{r}
+classif$y<-as.factor(classif$y)
+```
+
+En raison de la grande taille des données, il n'est pas possible de plotter toutes les combinaisons possibles en même temps, parmi toutes les variables existantes.
+```{r}
+### feature selection
+```
+Donc, nous les séparons et utilisons la correlation de Pearson pour identifier s'il existe une liaison linéaire ou de rangement afin de diminuer le nombre de caractéristiques, d'améliorer la précision du modèle et de réduire le temps d'exécution.
+
+
+Nous mettez 1729 comme la graine aléatoire afin que les résultats puissent être reproduire dans tous les autres ordinateurs.
+Nous séparons des données en test et train en mettant le nombre d'ensembles de test à 2/3 de l'ensemble des données.
+
+1.2 Comparaison des différentes méthodes utilisées
+
+Dans cette partie, nous avons testé 7 différents modèles, Linear discriminant analyse(LDA), Quadratic Discriminant Analysis(QDA), Regularized discriminant analysis(RDA), Naive Bayes(NB), Logistic Regression, Classification/Decision Tree et K-Nearest Neighbor(KNN) pour la classification.
+Les fonctions pour classifier sont respectivement suivantes: lda, qda, rda, naive_bayes, multinom(au lieu de la fonction "plm", car il y a trois types de y dans l'ensemble de données), rpart et knn.
+
+Voici les codes pour la méthode Classification/Decision Tree:
+```{r}
+tree <- rpart(y~., data = classif.train, method="class",subset=train, parms = list(split = 'gini'))
+rpart.plot(tree, box.palette="RdBu", shadow.col="gray",fallen.leaves=FALSE)
+plotcp(tree)
+idx<-which.min(tree$cptable[,"xerror"])
+cp<-tree$cptable[idx,"CP"]
+pruned_tree<-prune(tree,cp=cp)
+rpart.plot(pruned_tree, box.palette="RdBu", shadow.col="gray", fallen.leaves=FALSE)
+pred.tree<-predict(pruned_tree,newdata=classif.test,type='class')
+```
+La fonction plotcp() peux tracer de l'erreur de validation croisée en fonction du paramètre de complexité.
+Nous retirons la meilleure complexité grâce à tree$cptable.
+
+Voici les codes pour la méthode kNN:
+```{r}
+for(k in 1:30){
+  classifier_knn <- knn(train = train_scale,
+                        test = test_scale,
+                        cl = classif.train$y,
+                        k = k)
+  misClassError <- mean(classifier_knn != classif.test$y)
+  print(paste(k, '- Accuracy =', 1-misClassError))
+  err.knn <- min(err.knn, misClassError)
+  plot(k,1-misClassError)
+}
+print(paste('maxAccuracy =', 1-err.knn))
+```
+
+!!!!!!!!!!! figure
+
+Nous observons que cette méthode n'est pas performante en termes de classification.
+
+Ensuite, nous évaluons des performances des modèles en observant les courbes ROC, les graphiques Cross-Validation et le tableau récapitulatif.
+
+1.2.1 Courbes ROC
+Nous pouvons calculer le taux d'erreur empirique en deux manière, prenons LDA comme exemple:
+```{r}
+# moyen1
+err.lda <- mean(pred.classif.lda$class!=classif.test$y)
+
+# moyen2 en utilisant la matrice de confusion
+matrix.conf.lda <- table(classif.test$y, pred.classif.lda$class) 
+err.lda <- 1-sum(diag(matrix.conf.lda))/nb.test 
+```
+
+Donc, nous obtenons le taux d'erreur de chaque méthode.
+```{r}
+sprintf("Taux d'erreur de LDA : %f",err.lda)                                    # 0.491018
+sprintf("Taux d'erreur de QDA : %f",err.qda)                                    # 0.347305
+sprintf("Taux d'erreur de RDA : %f",err.rda)                                    # 0.3413174
+sprintf("Taux d'erreur de Naive Bayes : %f",err.naive)                          # 0.353293
+sprintf("Taux d'erreur de classification/decision trees : %f",err.tree)         # 0.4491018
+sprintf("Taux d'erreur de multinomial logistic regression : %f",err.logistreg)  # 0.485030
+```
+
+Ensuite, nous affichons les courbes ROC en important la library "pROC".
+```{r}
+roc.lda <- roc(classif.test$y,as.vector(pred.classif.lda$posterior[,1])) 
+roc.qda <- roc(classif.test$y,as.vector(pred.qda$posterior[,1]))
+roc.rda <- roc(classif.test$y,as.vector(pred.rda$posterior[,1]))
+pred.tree.prob<-predict(tree, classif.test, "prob")
+roc.tree <- roc(classif.test$y, as.vector(pred.tree.prob[,1])) 
+pred.multi.logistreg.prob<-predict(multi.logistreg, classif.test, "prob")
+roc.logistreg <- roc(classif.test$y, as.vector(pred.multi.logistreg.prob[,1])) 
+pred.nb.prob <- predict(fit.naive, newdata=classif.test, type="prob")
+roc.nb <- roc(classif.test$y, as.vector(pred.nb.prob[,1]))
+```
+Nous pouvons bien savoir la surface sous la courbe et afficher toutes les courbes dans la même figure pour mieux comparer.
+```{r}
+multiROC
+```
+
+!!!!!!!!Ajouter la figure
+
+Nous pouvons donc résumer que la performance des modèles dans ce cas-là est NB > LDA > RDA > Logistic Regression > Decission Tree > QDA.
+
+1.2.2 Graphiques Corss-Validation
+
+```{r}
+#####A remplir
+```
+
+1.6 Choisissez un modèle
+Selon la performance du taux d'erreur, de la courbe ROC et de la k-fold cross-validation de tous les 7 modèles ci-dessus, nous choisissons enfin la modèle RDA(Regularized discriminant analysis) pour classifier les données.
+
+```{r}
+### codes complets pour RDA??
+```
+
