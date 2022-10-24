@@ -36,16 +36,16 @@ I. Classification
 ```{r}
 # code KNN
 library(nnet)
-fit<-multinom(y~., data=classif.train)
-pred.classif<-predict(fit, newdata=classif.test)
-perf<-table(classif.test$y, pred.classif)
-err.reglog <- 1-sum(diag(perf))/nb.test
+# fit<-multinom(y~., data=classif.train)
+# pred.classif<-predict(fit, newdata=classif.test)
+# perf<-table(classif.test$y, pred.classif)
+# err.reglog <- 1-sum(diag(perf))/nb.test
 ```
 
 Test d'insertion d'image ![Ceci est un test](/Users/cecileasselin/Desktop/SY19/TD4/test_plot.png)
 
 ```{r}
-head()
+# head()
 ```
 
 ```{r setup}
